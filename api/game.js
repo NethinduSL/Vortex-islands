@@ -1,12 +1,40 @@
 // ─── Vortex Islands — API v3 + Coin Economy + Public Lobbies ──────────────────
 const { v4: uuidv4 } = require('uuid');
-if (!global._vortexStore) global._vortexStore = { lobbies:{}, games:{}, online:{} };
+
+// Robust global store — survives multiple handler imports in the same process.
+// On Vercel, a single serverless instance handles many requests sequentially,
+// so global persists within that instance's lifetime.
+if (!global._vortexStore) {
+  global._vortexStore = { lobbies:{}, games:{}, online:{}, _botLocks:{} };
+}
 const store = global._vortexStore;
-// Expire online players after 20s of no heartbeat
+// Ensure _botLocks always exists (handles old in-memory instances after deploy)
+if (!store._botLocks) store._botLocks = {};
+
+// Expire online players after 35s of no heartbeat (generous for slow connections)
 function getOnlinePlayers() {
   const now = Date.now();
-  Object.keys(store.online).forEach(u => { if (now - store.online[u].ts > 20000) delete store.online[u]; });
+  Object.keys(store.online).forEach(u => { if (now - store.online[u].ts > 35000) delete store.online[u]; });
   return Object.keys(store.online);
+}
+
+// Expire stale games (>2 hours inactive) to prevent memory bloat
+function cleanupStaleGames() {
+  const now = Date.now();
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+  Object.keys(store.games).forEach(id => {
+    const g = store.games[id];
+    if (now - (g.lastAction||0) > TWO_HOURS) {
+      delete store.games[id];
+      delete store._botLocks[id];
+    }
+  });
+  // Expire lobbies inactive >30 min
+  const THIRTY_MIN = 30 * 60 * 1000;
+  Object.keys(store.lobbies).forEach(code => {
+    const l = store.lobbies[code];
+    if (now - (l.lastActivity||l.createdAt||0) > THIRTY_MIN) delete store.lobbies[code];
+  });
 }
 
 function seededRandom(seed) {
@@ -246,47 +274,59 @@ function awardCoin(g, winner) {
 
 function runBotMoves(g) {
   if (!g||g.gameOver||!g.bots||g.bots.length===0) return;
-  if (g.phase==='rps') {
-    g.bots.forEach(bot=>{
-      if (g.alivePlayers.includes(bot)&&!g.pendingRPS[bot]) {
-        g.pendingRPS[bot]=botPickRPS(); g.lastAction=Date.now();
-      }
-    });
-    if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
-      const choices={...g.pendingRPS};
-      g.rpsChoices=choices;
-      const winners=resolveMultiRPS(g.pendingRPS);
-      const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
-      if (winners.length===g.alivePlayers.length) {
-        g.moves.unshift(`🤝 TIE — ${choiceStr}`);
-        g.pendingRPS={}; g.rpsChoices={};
-        runBotMoves(g);
-      } else {
-        winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
-        g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
-        g.phase='action'; g.pendingRPS={};
-        winners.forEach(w=>awardCoin(g,w));
-        g.moves.unshift(`🏆 ${winners.join(', ')} WIN RPS (${choiceStr}) — each picks an action!`);
-        winners.filter(w=>g.bots.includes(w)).forEach(w=>{
-          const{act,target,fromInv}=botPickAction(g,w);
-          applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
-          delete g.pendingActions[w];
-        });
-        if (Object.keys(g.pendingActions).length===0){
-          g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+  // Bot-lock: prevent concurrent poll requests from running bots twice on same game
+  const lockKey = g.gameId;
+  if (store._botLocks[lockKey]) return;
+  store._botLocks[lockKey] = true;
+  try {
+    if (g.phase==='rps') {
+      g.bots.forEach(bot=>{
+        if (g.alivePlayers.includes(bot)&&!g.pendingRPS[bot]) {
+          g.pendingRPS[bot]=botPickRPS(); g.lastAction=Date.now();
+        }
+      });
+      if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
+        const choices={...g.pendingRPS};
+        g.rpsChoices=choices;
+        const winners=resolveMultiRPS(g.pendingRPS);
+        const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
+        if (winners.length===g.alivePlayers.length) {
+          g.moves.unshift(`🤝 TIE — ${choiceStr}`);
+          g.pendingRPS={}; g.rpsChoices={};
+          // Release lock before recursing so recursive call can proceed
+          store._botLocks[lockKey] = false;
+          runBotMoves(g);
+          return;
+        } else {
+          winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
+          g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
+          g.phase='action'; g.pendingRPS={};
+          winners.forEach(w=>awardCoin(g,w));
+          g.moves.unshift(`🏆 ${winners.join(', ')} WIN RPS (${choiceStr}) — each picks an action!`);
+          winners.filter(w=>g.bots.includes(w)).forEach(w=>{
+            const{act,target,fromInv}=botPickAction(g,w);
+            applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
+            delete g.pendingActions[w];
+          });
+          if (Object.keys(g.pendingActions).length===0){
+            g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+          }
         }
       }
+    } else if (g.phase==='action'&&g.pendingActions) {
+      const botActors=Object.keys(g.pendingActions).filter(w=>g.bots.includes(w));
+      botActors.forEach(w=>{
+        const{act,target,fromInv}=botPickAction(g,w);
+        applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
+        delete g.pendingActions[w];
+      });
+      if (Object.keys(g.pendingActions).length===0&&!g.gameOver){
+        g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+      }
     }
-  } else if (g.phase==='action'&&g.pendingActions) {
-    const botActors=Object.keys(g.pendingActions).filter(w=>g.bots.includes(w));
-    botActors.forEach(w=>{
-      const{act,target,fromInv}=botPickAction(g,w);
-      applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
-      delete g.pendingActions[w];
-    });
-    if (Object.keys(g.pendingActions).length===0&&!g.gameOver){
-      g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
-    }
+  } finally {
+    // Always release lock so future requests are not permanently blocked
+    store._botLocks[lockKey] = false;
   }
 }
 
@@ -309,6 +349,9 @@ module.exports=async function handler(req,res){
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
   if (req.method==='OPTIONS') return res.status(200).end();
 
+  // Periodically clean stale data (cheap check, ~1% of requests)
+  if (Math.random() < 0.01) cleanupStaleGames();
+
   const action=req.query.action;
 
   if (req.method==='GET') {
@@ -328,7 +371,10 @@ module.exports=async function handler(req,res){
     if (action==='game') {
       const g=store.games[req.query.gameId];
       if (!g) return fail(res,'GAME NOT FOUND',404);
-      runBotMoves(g);
+      // Only run bots on polls if the game seems stalled (no human action in 3s)
+      // This prevents every concurrent poll triggering bot moves simultaneously
+      const stalledMs = Date.now() - (g.lastAction||0);
+      if (stalledMs > 3000) runBotMoves(g);
       return ok(res,{state:publicState(g)});
     }
     if (action==='online_players') {
