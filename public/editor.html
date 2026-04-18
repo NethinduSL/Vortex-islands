@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PIXALET STUDIO — Pixel Art Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0d0d1a;
+  --panel:#111122;
+  --border:#39ff1444;
+  --green:#39ff14;
+  --cyan:#00aaff;
+  --orange:#ff4500;
+  --yellow:#ffd700;
+  --red:#ff1744;
+  --font:'Press Start 2P',monospace;
+}
+
+body{background:var(--bg);color:#fff;font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── Header ── */
+header{background:var(--panel);border-bottom:2px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+header h1{font-size:11px;color:var(--green);text-shadow:0 0 8px var(--green);letter-spacing:2px;}
+header span{font-size:7px;color:#555;letter-spacing:1px;}
+
+/* ── Layout ── */
+#app{display:flex;flex:1;gap:0;overflow:hidden;}
+
+/* ── Left Toolbar ── */
+#toolbar{background:var(--panel);border-right:2px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:8px;min-width:56px;align-items:center;}
+
+.tool-btn{
+  width:38px;height:38px;background:#0d0d1a;border:2px solid #333;color:#aaa;
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:border-color .1s,color .1s;
+  position:relative;
+}
+.tool-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.tool-btn.active{border-color:var(--green);color:var(--green);background:#0d1a0d;}
+.tool-btn[title]:hover::after{
+  content:attr(title);position:absolute;left:46px;top:50%;transform:translateY(-50%);
+  background:#111;border:1px solid #333;color:#fff;padding:4px 8px;font-size:7px;
+  white-space:nowrap;z-index:100;pointer-events:none;
+}
+
+.tool-sep{width:32px;height:2px;background:#222;margin:2px 0;}
+
+/* ── Canvas Area ── */
+#canvas-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;gap:12px;overflow:auto;background:#0a0a18;}
+
+#canvas-wrap{position:relative;cursor:crosshair;}
+#pixel-canvas{display:block;image-rendering:pixelated;}
+#grid-overlay{position:absolute;top:0;left:0;pointer-events:none;image-rendering:pixelated;}
+
+.canvas-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+
+/* ── Right Panel ── */
+#right-panel{background:var(--panel);border-left:2px solid var(--border);width:220px;min-width:200px;display:flex;flex-direction:column;overflow:hidden;}
+
+.rpanel-section{padding:10px;border-bottom:1px solid #222;}
+.rpanel-title{font-size:7px;color:var(--green);letter-spacing:2px;margin-bottom:8px;}
+
+/* Color Picker */
+#color-swatch{width:100%;height:36px;border:2px solid #333;cursor:pointer;margin-bottom:6px;}
+#hex-input{width:100%;background:#0d0d1a;border:2px solid #333;color:#fff;font-family:var(--font);font-size:8px;padding:6px;outline:none;}
+#hex-input:focus{border-color:var(--green);}
+
+/* Palette */
+#palette-grid{display:grid;grid-template-columns:repeat(8,22px);gap:3px;}
+.pal-color{width:22px;height:22px;cursor:pointer;border:2px solid transparent;transition:border-color .1s;}
+.pal-color:hover{border-color:#fff;}
+.pal-color.active{border-color:var(--green);}
+
+/* Canvas Size */
+#size-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.size-btn{background:#0d0d1a;border:2px solid #333;color:#aaa;font-family:var(--font);font-size:7px;padding:5px 8px;cursor:pointer;}
+.size-btn.active{border-color:var(--green);color:var(--green);}
+.size-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* Zoom */
+#zoom-row{display:flex;gap:6px;align-items:center;}
+#zoom-val{font-size:8px;color:var(--yellow);min-width:30px;text-align:center;}
+
+/* Layers / Frames (simplified) */
+.mini-btn{background:#0d0d1a;border:2px solid #333;color:#aaa;font-family:var(--font);font-size:7px;padding:5px 8px;cursor:pointer;white-space:nowrap;}
+.mini-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* Presets */
+#preset-list{display:flex;flex-direction:column;gap:4px;}
+.preset-btn{background:#0d0d1a;border:2px solid #333;color:#ccc;font-family:var(--font);font-size:7px;padding:6px 8px;cursor:pointer;text-align:left;}
+.preset-btn:hover{border-color:var(--orange);color:var(--orange);}
+
+/* Output */
+#output-area{flex:1;display:flex;flex-direction:column;padding:10px;gap:6px;}
+#output-title{font-size:7px;color:var(--green);letter-spacing:2px;}
+#code-output{
+  flex:1;background:#0a0a14;border:1px solid #222;color:#0f0;font-family:monospace;
+  font-size:9px;padding:8px;overflow:auto;white-space:pre;resize:none;min-height:80px;
+  outline:none;
+}
+#copy-btn{background:var(--cyan);color:#0d0d1a;border:none;font-family:var(--font);font-size:8px;padding:8px;cursor:pointer;box-shadow:3px 3px 0 #000;letter-spacing:1px;}
+#copy-btn:active{transform:translate(1px,1px);box-shadow:2px 2px 0 #000;}
+#copy-msg{font-size:7px;color:var(--green);min-height:14px;text-align:center;}
+
+/* Bottom bar */
+#bottom-bar{background:var(--panel);border-top:2px solid var(--border);padding:6px 12px;font-size:7px;color:#555;display:flex;gap:16px;flex-wrap:wrap;}
+#cursor-info{color:#aaa;}
+
+button.action-btn{
+  background:var(--orange);color:#fff;border:none;font-family:var(--font);
+  font-size:7px;padding:6px 10px;cursor:pointer;box-shadow:3px 3px 0 #000;
+  letter-spacing:1px;
+}
+button.action-btn:hover{background:#ff6020;}
+button.action-btn:active{transform:translate(1px,1px);box-shadow:2px 2px 0 #000;}
+button.action-btn.green{background:var(--green);color:#0d0d1a;}
+button.action-btn.red{background:var(--red);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:#0a0a14;}
+::-webkit-scrollbar-thumb{background:#333;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>▓ PIXALET STUDIO</h1>
+  <span>PIXEL ART EDITOR v1.0 — BIT X</span>
+  <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="action-btn green" onclick="exportPNG()">⬇ PNG</button>
+    <button class="action-btn" onclick="clearCanvas()">✕ CLEAR</button>
+    <button class="action-btn" onclick="fillAll()">▓ FILL ALL</button>
+  </div>
+</header>
+
+<div id="app">
+
+  <!-- LEFT TOOLBAR -->
+  <div id="toolbar">
+    <button class="tool-btn active" id="tool-pencil" title="Pencil (P)" onclick="setTool('pencil')">✏</button>
+    <button class="tool-btn" id="tool-eraser" title="Eraser (E)" onclick="setTool('eraser')">⬜</button>
+    <button class="tool-btn" id="tool-fill"   title="Fill Bucket (F)" onclick="setTool('fill')">🪣</button>
+    <button class="tool-btn" id="tool-eyedrop" title="Eyedropper (I)" onclick="setTool('eyedrop')">💉</button>
+    <button class="tool-btn" id="tool-line"   title="Line (L)" onclick="setTool('line')">╱</button>
+    <button class="tool-btn" id="tool-rect"   title="Rectangle (R)" onclick="setTool('rect')">▭</button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" title="Undo (Ctrl+Z)" onclick="undo()">↩</button>
+    <button class="tool-btn" title="Redo (Ctrl+Y)" onclick="redo()">↪</button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" title="Flip H" onclick="flipH()">↔</button>
+    <button class="tool-btn" title="Flip V" onclick="flipV()">↕</button>
+  </div>
+
+  <!-- CANVAS AREA -->
+  <div id="canvas-area">
+    <div class="canvas-controls">
+      <span style="font-size:7px;color:#555;">CANVAS SIZE:</span>
+      <button class="size-btn" onclick="resizeCanvas(8,8)">8×8</button>
+      <button class="size-btn" onclick="resizeCanvas(16,16)">16×16</button>
+      <button class="size-btn active" onclick="resizeCanvas(32,32)">32×32</button>
+      <button class="size-btn" onclick="resizeCanvas(48,48)">48×48</button>
+      <button class="size-btn" onclick="resizeCanvas(64,64)">64×64</button>
+    </div>
+    <div class="canvas-controls">
+      <span style="font-size:7px;color:#555;">ZOOM:</span>
+      <button class="action-btn" onclick="zoom(-2)">−</button>
+      <span id="zoom-val">12×</span>
+      <button class="action-btn" onclick="zoom(+2)">+</button>
+      <label style="font-size:7px;color:#555;display:flex;align-items:center;gap:4px;">
+        <input type="checkbox" id="show-grid" checked onchange="redrawAll()"/> GRID
+      </label>
+      <label style="font-size:7px;color:#555;display:flex;align-items:center;gap:4px;">
+        <input type="checkbox" id="show-checker" checked onchange="redrawAll()"/> BG
+      </label>
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="pixel-canvas"></canvas>
+      <canvas id="grid-overlay"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+
+    <!-- Color -->
+    <div class="rpanel-section">
+      <div class="rpanel-title">▶ COLOR</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <div id="color-preview" style="width:36px;height:36px;border:2px solid #333;background:#ff4500;flex-shrink:0;cursor:pointer;" onclick="document.getElementById('native-picker').click()"></div>
+        <input type="text" id="hex-input" value="#ff4500" placeholder="#RRGGBB" oninput="onHexInput(this.value)"/>
+        <input type="color" id="native-picker" style="opacity:0;width:0;height:0;position:absolute;" oninput="onNativePick(this.value)"/>
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:6px;">
+        <div style="flex:1;">
+          <div style="font-size:6px;color:#555;margin-bottom:3px;">PRIMARY</div>
+          <div id="primary-swatch" style="height:24px;border:2px solid #39ff14;cursor:pointer;background:#ff4500;"></div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:6px;color:#555;margin-bottom:3px;">SECONDARY</div>
+          <div id="secondary-swatch" style="height:24px;border:2px solid #333;cursor:pointer;background:#00aaff;" onclick="swapColors()"></div>
+        </div>
+      </div>
+      <div id="palette-grid"></div>
+    </div>
+
+    <!-- Canvas size quick -->
+    <div class="rpanel-section">
+      <div class="rpanel-title">▶ PRESETS</div>
+      <div id="preset-list">
+        <button class="preset-btn" onclick="loadPreset('cannon')">💣 CANNON / MORTAR</button>
+        <button class="preset-btn" onclick="loadPreset('shield')">🛡 SHIELD</button>
+        <button class="preset-btn" onclick="loadPreset('slicer')">⚔ SLICER BLADE</button>
+        <button class="preset-btn" onclick="loadPreset('coin')">🪙 COIN</button>
+        <button class="preset-btn" onclick="loadPreset('chest')">📦 TREASURE CHEST</button>
+        <button class="preset-btn" onclick="loadPreset('player')">🧑 PLAYER SPRITE</button>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div id="output-area">
+      <div id="output-title">▶ EXPORT CODE</div>
+      <button class="mini-btn" style="margin-bottom:6px;" onclick="generateCode()">⟳ GENERATE CSS CODE</button>
+      <textarea id="code-output" readonly placeholder="Click GENERATE to get CSS pixel art code..."></textarea>
+      <button id="copy-btn" onclick="copyCode()">⎘ COPY CODE</button>
+      <div id="copy-msg"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="bottom-bar">
+  <span id="cursor-info">X:0 Y:0</span>
+  <span id="tool-info">TOOL: PENCIL</span>
+  <span id="canvas-info">32×32</span>
+  <span style="margin-left:auto;color:#39ff14;">PIXALET STUDIO — BIT X</span>
+</div>
+
+<script>
+// ─── State ─────────────────────────────────────────────────────────────────
+let COLS = 32, ROWS = 32;
+let ZOOM = 12;
+let tool = 'pencil';
+let primaryColor = '#ff4500';
+let secondaryColor = '#00aaff';
+let pixels = []; // 2D array [row][col] = color string or null
+let undoStack = [], redoStack = [];
+let isDrawing = false;
+let lastCell = null;
+let lineStart = null;
+let rectStart = null;
+let previewPixels = null;
+
+const canvas = document.getElementById('pixel-canvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('grid-overlay');
+const octx = overlay.getContext('2d');
+
+// ─── Palette ───────────────────────────────────────────────────────────────
+const PALETTE = [
+  // Mario sky theme + game colors
+  '#5c94fc','#87ceeb','#ffffff','#000000',
+  '#ff4500','#ffd700','#39ff14','#00aaff',
+  '#ff1744','#e2b96f','#4caf50','#2e7d32',
+  '#78909c','#1a1a2e','#16213e','#111122',
+  '#8b4513','#a0522d','#d2691e','#f4a460',
+  '#6a5acd','#9b59b6','#e91e63','#ff9800',
+  '#795548','#607d8b','#37474f','#263238',
+  '#b71c1c','#0d47a1','#1b5e20','#f57f17',
+];
+
+function buildPalette(){
+  const grid = document.getElementById('palette-grid');
+  grid.innerHTML = '';
+  PALETTE.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'pal-color';
+    d.style.background = c;
+    d.title = c;
+    d.onclick = () => { primaryColor = c; updateColorUI(); };
+    d.oncontextmenu = (e) => { e.preventDefault(); secondaryColor = c; updateColorUI(); };
+    grid.appendChild(d);
+  });
+}
+
+function updateColorUI(){
+  document.getElementById('color-preview').style.background = primaryColor;
+  document.getElementById('primary-swatch').style.background = primaryColor;
+  document.getElementById('secondary-swatch').style.background = secondaryColor;
+  document.getElementById('hex-input').value = primaryColor;
+  document.getElementById('native-picker').value = primaryColor;
+}
+
+function onHexInput(v){
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){primaryColor=v;updateColorUI();}
+}
+function onNativePick(v){primaryColor=v;updateColorUI();}
+function swapColors(){[primaryColor,secondaryColor]=[secondaryColor,primaryColor];updateColorUI();}
+
+// ─── Canvas Setup ──────────────────────────────────────────────────────────
+function initPixels(){
+  pixels = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+}
+
+function resizeCanvas(c,r,keepData=false){
+  const oldPixels = pixels.map(row=>[...row]);
+  const oldCols=COLS,oldRows=ROWS;
+  COLS=c;ROWS=r;
+  if(!keepData){
+    initPixels();
+  } else {
+    pixels=Array.from({length:ROWS},(_,ri)=>
+      Array.from({length:COLS},(_,ci)=>
+        ri<oldRows&&ci<oldCols ? oldPixels[ri][ci] : null
+      )
+    );
+  }
+  saveUndo();
+  document.querySelectorAll('.size-btn').forEach(b=>{
+    b.classList.toggle('active', b.textContent===`${c}×${r}`);
+  });
+  document.getElementById('canvas-info').textContent = `${COLS}×${ROWS}`;
+  redrawAll();
+}
+
+function zoom(delta){
+  ZOOM = Math.max(2, Math.min(32, ZOOM+delta));
+  document.getElementById('zoom-val').textContent = ZOOM+'×';
+  redrawAll();
+}
+
+// ─── Drawing ───────────────────────────────────────────────────────────────
+function redrawAll(){
+  const W = COLS*ZOOM, H = ROWS*ZOOM;
+  canvas.width = overlay.width = W;
+  canvas.height = overlay.height = H;
+  const wrap = document.getElementById('canvas-wrap');
+  wrap.style.width = W+'px';
+  wrap.style.height = H+'px';
+
+  // Checkerboard BG
+  ctx.clearRect(0,0,W,H);
+  if(document.getElementById('show-checker').checked){
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      ctx.fillStyle=(r+c)%2===0?'#1a1a2e':'#222233';
+      ctx.fillRect(c*ZOOM,r*ZOOM,ZOOM,ZOOM);
+    }
+  }
+
+  // Pixels
+  const src = previewPixels || pixels;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(src[r][c]){
+      ctx.fillStyle=src[r][c];
+      ctx.fillRect(c*ZOOM,r*ZOOM,ZOOM,ZOOM);
+    }
+  }
+
+  // Grid overlay
+  octx.clearRect(0,0,W,H);
+  if(document.getElementById('show-grid').checked && ZOOM>=4){
+    octx.strokeStyle='rgba(255,255,255,0.07)';
+    octx.lineWidth=1;
+    for(let c=0;c<=COLS;c++){octx.beginPath();octx.moveTo(c*ZOOM,0);octx.lineTo(c*ZOOM,H);octx.stroke();}
+    for(let r=0;r<=ROWS;r++){octx.beginPath();octx.moveTo(0,r*ZOOM);octx.lineTo(W,r*ZOOM);octx.stroke();}
+  }
+}
+
+function cellAt(e){
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  const c=Math.floor(x/ZOOM), r=Math.floor(y/ZOOM);
+  if(c<0||c>=COLS||r<0||r>=ROWS) return null;
+  return {c,r};
+}
+
+function drawPixel(r,c,color){
+  if(r<0||r>=ROWS||c<0||c>=COLS) return;
+  pixels[r][c]=color;
+}
+
+function erasePixel(r,c){
+  if(r<0||r>=ROWS||c<0||c>=COLS) return;
+  pixels[r][c]=null;
+}
+
+// Flood fill
+function floodFill(r,c,newColor){
+  const target=pixels[r][c];
+  if(target===newColor) return;
+  const stack=[[r,c]];
+  while(stack.length){
+    const [cr,cc]=stack.pop();
+    if(cr<0||cr>=ROWS||cc<0||cc>=COLS) continue;
+    if(pixels[cr][cc]!==target) continue;
+    pixels[cr][cc]=newColor;
+    stack.push([cr+1,cc],[cr-1,cc],[cr,cc+1],[cr,cc-1]);
+  }
+}
+
+// Line (Bresenham)
+function linePixels(r0,c0,r1,c1){
+  const pts=[];
+  let dr=Math.abs(r1-r0),dc=Math.abs(c1-c0);
+  let sr=r0<r1?1:-1,sc=c0<c1?1:-1;
+  let err=dc-dr;
+  while(true){
+    pts.push([r0,c0]);
+    if(r0===r1&&c0===c1) break;
+    const e2=2*err;
+    if(e2>-dr){err-=dr;c0+=sc;}
+    if(e2<dc){err+=dc;r0+=sr;}
+  }
+  return pts;
+}
+
+// Rect
+function rectPixels(r0,c0,r1,c1){
+  const pts=[];
+  const rMin=Math.min(r0,r1),rMax=Math.max(r0,r1);
+  const cMin=Math.min(c0,c1),cMax=Math.max(c0,c1);
+  for(let r=rMin;r<=rMax;r++) for(let c=cMin;c<=cMax;c++) pts.push([r,c]);
+  return pts;
+}
+
+// ─── Mouse Events ──────────────────────────────────────────────────────────
+canvas.addEventListener('mousedown',e=>{
+  const cell=cellAt(e);
+  if(!cell) return;
+  const color = e.button===2 ? secondaryColor : primaryColor;
+  isDrawing=true;
+  lastCell=cell;
+
+  if(tool==='pencil'){saveUndo();drawPixel(cell.r,cell.c,color);redrawAll();}
+  else if(tool==='eraser'){saveUndo();erasePixel(cell.r,cell.c);redrawAll();}
+  else if(tool==='fill'){saveUndo();floodFill(cell.r,cell.c,color);redrawAll();}
+  else if(tool==='eyedrop'){primaryColor=pixels[cell.r][cell.c]||'#000000';updateColorUI();}
+  else if(tool==='line'){lineStart={...cell};}
+  else if(tool==='rect'){rectStart={...cell};}
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const cell=cellAt(e);
+  if(cell) document.getElementById('cursor-info').textContent=`X:${cell.c} Y:${cell.r}`;
+  if(!isDrawing||!cell) return;
+  const color = primaryColor;
+
+  if(tool==='pencil'){
+    if(lastCell&&(lastCell.r!==cell.r||lastCell.c!==cell.c)){
+      linePixels(lastCell.r,lastCell.c,cell.r,cell.c).forEach(([r,c])=>drawPixel(r,c,color));
+    }
+    lastCell=cell; redrawAll();
+  } else if(tool==='eraser'){
+    erasePixel(cell.r,cell.c); redrawAll();
+  } else if(tool==='line'&&lineStart){
+    previewPixels=pixels.map(row=>[...row]);
+    linePixels(lineStart.r,lineStart.c,cell.r,cell.c).forEach(([r,c])=>{
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS) previewPixels[r][c]=color;
+    });
+    redrawAll();
+  } else if(tool==='rect'&&rectStart){
+    previewPixels=pixels.map(row=>[...row]);
+    rectPixels(rectStart.r,rectStart.c,cell.r,cell.c).forEach(([r,c])=>{
+      if(r>=0&&r<ROWS&&c>=0&&c<COLS) previewPixels[r][c]=color;
+    });
+    redrawAll();
+  }
+});
+
+canvas.addEventListener('mouseup',e=>{
+  const cell=cellAt(e);
+  if(tool==='line'&&lineStart&&cell){
+    saveUndo();
+    linePixels(lineStart.r,lineStart.c,cell.r,cell.c).forEach(([r,c])=>drawPixel(r,c,primaryColor));
+    lineStart=null; previewPixels=null;
+  } else if(tool==='rect'&&rectStart&&cell){
+    saveUndo();
+    rectPixels(rectStart.r,rectStart.c,cell.r,cell.c).forEach(([r,c])=>drawPixel(r,c,primaryColor));
+    rectStart=null; previewPixels=null;
+  }
+  isDrawing=false; redrawAll();
+});
+
+canvas.addEventListener('mouseleave',()=>{if(isDrawing&&(tool==='line'||tool==='rect')){previewPixels=null;redrawAll();}isDrawing=false;});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
+// Touch
+canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];canvas.dispatchEvent(new MouseEvent('mousedown',{clientX:t.clientX,clientY:t.clientY,button:0}));},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:t.clientX,clientY:t.clientY}));},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();canvas.dispatchEvent(new MouseEvent('mouseup',{}));},{passive:false});
+
+// ─── Tools ─────────────────────────────────────────────────────────────────
+function setTool(t){
+  tool=t;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('tool-'+t);
+  if(el) el.classList.add('active');
+  document.getElementById('tool-info').textContent='TOOL: '+t.toUpperCase();
+  canvas.style.cursor = t==='eyedrop'?'crosshair':t==='fill'?'cell':'crosshair';
+}
+
+// ─── Undo/Redo ─────────────────────────────────────────────────────────────
+function saveUndo(){
+  undoStack.push(pixels.map(r=>[...r]));
+  if(undoStack.length>50) undoStack.shift();
+  redoStack=[];
+}
+function undo(){if(!undoStack.length) return;redoStack.push(pixels.map(r=>[...r]));pixels=undoStack.pop();redrawAll();}
+function redo(){if(!redoStack.length) return;undoStack.push(pixels.map(r=>[...r]));pixels=redoStack.pop();redrawAll();}
+
+// ─── Utils ─────────────────────────────────────────────────────────────────
+function clearCanvas(){saveUndo();initPixels();redrawAll();}
+function fillAll(){saveUndo();pixels=Array.from({length:ROWS},()=>Array(COLS).fill(primaryColor));redrawAll();}
+function flipH(){saveUndo();pixels=pixels.map(row=>[...row].reverse());redrawAll();}
+function flipV(){saveUndo();pixels=[...pixels].reverse();redrawAll();}
+
+// ─── Export PNG ────────────────────────────────────────────────────────────
+function exportPNG(){
+  const exp=document.createElement('canvas');
+  exp.width=COLS;exp.height=ROWS;
+  const ec=exp.getContext('2d');
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(pixels[r][c]){ec.fillStyle=pixels[r][c];ec.fillRect(c,r,1,1);}
+  }
+  const a=document.createElement('a');
+  a.href=exp.toDataURL('image/png');
+  a.download='pixalet-sprite.png';
+  a.click();
+}
+
+// ─── Generate CSS Code ─────────────────────────────────────────────────────
+function generateCode(){
+  // Generate box-shadow pixel art CSS
+  const shadows=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(pixels[r][c]) shadows.push(`${(c+1)}px ${(r+1)}px 0 ${pixels[r][c]}`);
+  }
+  if(!shadows.length){document.getElementById('code-output').value='/* No pixels drawn yet */';return;}
+
+  const css = `/* Pixalet Studio Export — ${COLS}×${ROWS} */
+.pixel-art {
+  width: 1px;
+  height: 1px;
+  box-shadow:
+    ${shadows.join(',\n    ')};
+  image-rendering: pixelated;
+}
+
+/* Usage: <div class="pixel-art"></div>
+   Wrap in: position:relative; overflow:visible; */`;
+
+  document.getElementById('code-output').value = css;
+}
+
+function copyCode(){
+  const ta=document.getElementById('code-output');
+  if(!ta.value||ta.value.startsWith('/*')) return;
+  navigator.clipboard.writeText(ta.value).then(()=>{
+    const msg=document.getElementById('copy-msg');
+    msg.textContent='✓ COPIED!';
+    setTimeout(()=>msg.textContent='',2000);
+  });
+}
+
+// ─── Presets ───────────────────────────────────────────────────────────────
+const PRESETS = {
+  cannon: {
+    cols:16,rows:16,
+    data:[
+      '................',
+      '................',
+      '....KKKKKK......',
+      '...K888888K.....',
+      '..K88888888K....',
+      '..K88888888K....',
+      '..K88888888K....',
+      '.KKKK8888KKKK...',
+      '.K888888888888K.',
+      '.K888888888888K.',
+      '.KKKKKKKKKKKKKK.',
+      '....KK...KK.....',
+      '....KK...KK.....',
+      '....KK...KK.....',
+      '................',
+      '................',
+    ],
+    colors:{'K':'#222','8':'#555','.'null:true}
+  },
+  shield: {
+    cols:16,rows:16,
+    data:[
+      '................',
+      '....CCCCCCCC....',
+      '...CCBBBBBBCC...',
+      '..CCBBBBBBBBCC..',
+      '..CBBBBBBBBBBC..',
+      '..CBBBWWWBBBC...',
+      '..CBBBWWWBBBC...',
+      '..CBBBWWWBBBC...',
+      '..CBBBBBBBBBBC..',
+      '...CCBBBBBBCC...',
+      '....CCBBBBCC....',
+      '.....CCBBCC.....',
+      '......CCCC......',
+      '.......CC.......',
+      '................',
+      '................',
+    ],
+    colors:{'C':'#00aaff','B':'#0055aa','W':'#ffffff','.'null:true}
+  },
+  slicer: {
+    cols:16,rows:16,
+    data:[
+      '..............SS',
+      '.............SSS',
+      '............SSSK',
+      '...........SSSSK',
+      '..........SSSSKK',
+      '.........SSKKKK.',
+      '........SSKK....',
+      '.......SSKK.....',
+      '......SSKK......',
+      '.....SSKK.......',
+      '....SSKK........',
+      '...SSKK.........',
+      '..KKKK..........',
+      '.KKK............',
+      '.KK.............',
+      '................',
+    ],
+    colors:{'S':'#aaccff','K':'#334','.'null:true}
+  },
+  coin: {
+    cols:16,rows:16,
+    data:[
+      '................',
+      '....YYYYYYYY....',
+      '...YYOOOOOOYY...',
+      '..YYOOOOOOOOYYY.',
+      '..YOOOOOOOOOOOY.',
+      '..YOOOOOOOOOOOY.',
+      '..YOOOOOOOOOOOY.',
+      '..YOOOOOOOOOOOY.',
+      '..YOOOOOOOOOOOY.',
+      '..YOOOOOOOOOOOY.',
+      '..YYOOOOOOOOYYY.',
+      '...YYOOOOOOYY...',
+      '....YYYYYYYY....',
+      '................',
+      '................',
+      '................',
+    ],
+    colors:{'Y':'#ffd700','O':'#ffaa00','.'null:true}
+  },
+  chest: {
+    cols:16,rows:16,
+    data:[
+      '................',
+      '..KKKKKKKKKKKK..',
+      '.KBBBBBBBBBBBBK.',
+      '.KBBBBBBBBBBBBK.',
+      '.KBBBBBBBBBBBBK.',
+      '.KKKKKKKKKKKKKK.',
+      '.KBBKKKKKKKBBK..',
+      '.KBBKGGGGGGBBK..',
+      '.KBBKGGGGGGBBK..',
+      '.KBBKKKKKKKBBK..',
+      '.KBBBBBBBBBBBBK.',
+      '.KBBBBBBBBBBBBK.',
+      '.KBBBBBBBBBBBBK.',
+      '.KKKKKKKKKKKKKK.',
+      '................',
+      '................',
+    ],
+    colors:{'K':'#222','B':'#a0522d','G':'#ffd700','.'null:true}
+  },
+  player: {
+    cols:16,rows:16,
+    data:[
+      '....RRRRRR......',
+      '...RRRRRRRRR....',
+      '...BBBBBBBBBB...',
+      '..BWBWBWBWBWB...',
+      '..BWBWBWBWBWB...',
+      '...BBBBBBBBB....',
+      '....RRRRRRR.....',
+      '...RRRBRRRRR....',
+      '..RRRBRRRRRR....',
+      '..RRRBRRRRRR....',
+      '...RRRRRRRR.....',
+      '....RR...RR.....',
+      '....RR...RR.....',
+      '....KK...KK.....',
+      '................',
+      '................',
+    ],
+    colors:{'R':'#ff4500','B':'#0055aa','W':'#ffddcc','K':'#333','.'null:true}
+  }
+};
+
+function loadPreset(name){
+  const p = PRESETS[name];
+  if(!p) return;
+  resizeCanvas(p.cols, p.rows, false);
+  saveUndo();
+  for(let r=0;r<p.rows;r++){
+    for(let c=0;c<p.cols;c++){
+      const ch = p.data[r][c];
+      if(ch==='.') { pixels[r][c]=null; continue; }
+      pixels[r][c] = p.colors[ch] || null;
+    }
+  }
+  redrawAll();
+}
+
+// ─── Keyboard Shortcuts ────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if(e.ctrlKey&&e.key==='z'){undo();return;}
+  if(e.ctrlKey&&e.key==='y'){redo();return;}
+  switch(e.key.toLowerCase()){
+    case 'p': setTool('pencil'); break;
+    case 'e': setTool('eraser'); break;
+    case 'f': setTool('fill'); break;
+    case 'i': setTool('eyedrop'); break;
+    case 'l': setTool('line'); break;
+    case 'r': setTool('rect'); break;
+    case '+': case '=': zoom(2); break;
+    case '-': zoom(-2); break;
+  }
+});
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+buildPalette();
+updateColorUI();
+initPixels();
+resizeCanvas(32,32,false);
+redrawAll();
+</script>
+</body>
+</html>

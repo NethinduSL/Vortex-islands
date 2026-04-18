@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>VORTEX ISLANDS</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#5c94fc;
+  background-image:
+    radial-gradient(ellipse 120px 60px at 15% 30%,#fff 0%,#fff 60%,transparent 70%),
+    radial-gradient(ellipse 80px 40px at 25% 35%,#fff 0%,transparent 70%),
+    radial-gradient(ellipse 100px 50px at 70% 20%,#fff 0%,#fff 55%,transparent 68%),
+    radial-gradient(ellipse 60px 30px at 80% 25%,#fff 0%,transparent 65%);
+  min-height:100vh;font-family:'Press Start 2P',monospace;
+  display:flex;flex-direction:column;align-items:center;padding:28px 16px 70px;color:#1a1a1a;
+}
+body::after{content:'';position:fixed;bottom:0;left:0;right:0;height:40px;
+  background:repeating-linear-gradient(90deg,#4caf50 0px,#4caf50 16px,#388e3c 16px,#388e3c 32px);
+  border-top:4px solid #2e7d32;z-index:0;}
+h1{font-size:clamp(14px,4vw,24px);color:#fff;text-shadow:4px 4px 0 #8b4513,-2px -2px 0 #8b4513,2px -2px 0 #8b4513;
+  letter-spacing:3px;margin-bottom:6px;text-align:center;}
+.subtitle{font-size:7px;color:#ffd700;text-shadow:2px 2px 0 #8b4513;margin-bottom:24px;letter-spacing:2px;}
+.card{background:#1a1a1a;border:4px solid #ffd700;box-shadow:4px 4px 0 #000,8px 8px 0 #8b4513;
+  padding:18px;width:100%;max-width:480px;margin-bottom:14px;position:relative;z-index:1;}
+.card-title{font-size:8px;color:#ffd700;margin-bottom:14px;letter-spacing:2px;}
+input[type="text"],input[type="number"]{background:#0a0a0a;border:3px solid #ffd700;color:#fff;
+  font-family:'Press Start 2P',monospace;font-size:9px;padding:10px;width:100%;outline:none;margin-bottom:8px;}
+input:focus{border-color:#39ff14;}
+button{font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;border:none;
+  padding:10px 16px;box-shadow:4px 4px 0 #000;text-transform:uppercase;letter-spacing:1px;}
+button:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
+button:disabled{background:#444!important;color:#777!important;cursor:not-allowed;box-shadow:none;}
+.btn-red{background:#e53935;color:#fff;} .btn-green{background:#39ff14;color:#0a0a0a;}
+.btn-yellow{background:#ffd700;color:#1a1a1a;} .btn-cyan{background:#00aaff;color:#1a1a1a;}
+.btn-gray{background:#444;color:#ccc;}
+#status-bar{font-size:7px;color:#39ff14;margin-bottom:6px;min-height:16px;z-index:1;position:relative;}
+#status-bar.err{color:#ff1744;}
+#error-msg{font-size:7px;color:#ff4500;min-height:14px;margin-bottom:6px;}
+.row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;}
+.row input{flex:1;min-width:100px;margin:0;}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid #ffd70044;border-top-color:#ffd700;
+  border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.coin-row{display:flex;gap:8px;justify-content:center;margin-bottom:16px;z-index:1;position:relative;}
+.coin{width:20px;height:20px;background:#ffd700;box-shadow:2px 2px 0 #8b6914,inset -2px -2px 0 #ff9800;
+  border-radius:50%;animation:bob .8s ease-in-out infinite alternate;}
+.coin:nth-child(2){animation-delay:.15s}.coin:nth-child(3){animation-delay:.3s}.coin:nth-child(4){animation-delay:.45s}
+@keyframes bob{to{transform:translateY(-4px)}}
+.screen{display:none;width:100%;max-width:480px;flex-direction:column;align-items:center;gap:0;}
+.screen.active{display:flex;}
+#lobby-code-display{font-size:20px;color:#39ff14;text-align:center;letter-spacing:6px;
+  border:3px solid #39ff14;padding:10px 20px;margin-bottom:12px;background:#0a1a0a;
+  box-shadow:0 0 12px rgba(57,255,20,0.3);}
+.lobby-hint{font-size:6px;color:#888;text-align:center;margin-bottom:14px;}
+.player-pill{display:flex;align-items:center;justify-content:space-between;
+  background:#0a0a0a;border:2px solid #333;padding:8px 12px;margin-bottom:6px;font-size:7px;color:#ccc;}
+.player-pill.host-pill{border-color:#ffd700;color:#ffd700;}
+.badge{font-size:6px;background:#ffd700;color:#000;padding:2px 5px;margin-left:6px;}
+.badge-alive{font-size:6px;background:#39ff14;color:#000;padding:2px 5px;margin-left:6px;}
+#lobby-player-count{font-size:7px;color:#888;margin-bottom:10px;}
+#start-btn{width:100%;font-size:9px;padding:14px;margin-top:4px;}
+#max-players-select{background:#0a0a0a;border:3px solid #ffd700;color:#ffd700;
+  font-family:'Press Start 2P',monospace;font-size:9px;padding:10px;width:100%;outline:none;
+  margin-bottom:12px;cursor:pointer;}
+.editor-link{font-size:7px;color:#ffd700;text-shadow:2px 2px 0 #000;text-decoration:none;
+  padding:6px 12px;background:#1a1a1a;border:2px solid #ffd700;box-shadow:3px 3px 0 #000;
+  z-index:1;position:relative;display:inline-block;margin-top:8px;}
+.editor-link:hover{background:#333;}
+</style>
+</head>
+<body>
+
+<div class="coin-row">
+  <div class="coin"></div><div class="coin"></div>
+  <div class="coin"></div><div class="coin"></div>
+</div>
+<h1>VORTEX ISLANDS</h1>
+<p class="subtitle">▓ SUPER PIXEL EDITION ▓</p>
+<div id="status-bar">⚡ READY</div>
+
+<!-- SCREEN 1: Register -->
+<div class="screen active" id="screen-register">
+  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+    <div class="card-title">🎮 ENTER YOUR NAME</div>
+    <div id="error-msg"></div>
+    <input type="text" id="username-input" placeholder="YOUR NAME" maxlength="14"/>
+    <button class="btn-red" id="register-btn" style="width:100%">ENTER ARENA!</button>
+  </div>
+</div>
+
+<!-- SCREEN 2: Host or Join -->
+<div class="screen" id="screen-menu">
+  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+    <div class="card-title">👾 WHAT DO YOU WANT TO DO?</div>
+    <div id="error-msg2"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn-green" id="host-btn" style="flex:1;min-width:120px;padding:14px 8px;">
+        🏠 HOST GAME
+      </button>
+      <button class="btn-cyan" id="join-btn" style="flex:1;min-width:120px;padding:14px 8px;">
+        🚪 JOIN LOBBY
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3a: Create Lobby -->
+<div class="screen" id="screen-create">
+  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+    <div class="card-title">🏠 CREATE LOBBY</div>
+    <div id="error-msg3"></div>
+    <label style="font-size:7px;color:#aaa;display:block;margin-bottom:6px;">MAX PLAYERS</label>
+    <select id="max-players-select">
+      <option value="2">2 PLAYERS</option>
+      <option value="3">3 PLAYERS</option>
+      <option value="4">4 PLAYERS</option>
+      <option value="5">5 PLAYERS</option>
+      <option value="6" selected>6 PLAYERS</option>
+    </select>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-yellow" id="create-lobby-btn" style="flex:1;">CREATE!</button>
+      <button class="btn-gray" onclick="showScreen('screen-menu')">← BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3b: Join Lobby -->
+<div class="screen" id="screen-join">
+  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+    <div class="card-title">🚪 JOIN LOBBY</div>
+    <div id="error-msg4"></div>
+    <input type="text" id="lobby-code-input" placeholder="ENTER LOBBY CODE" maxlength="5" style="text-transform:uppercase;letter-spacing:4px;"/>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-cyan" id="join-lobby-btn" style="flex:1;">JOIN!</button>
+      <button class="btn-gray" onclick="showScreen('screen-menu')">← BACK</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: Lobby Room -->
+<div class="screen" id="screen-lobby">
+  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+    <div class="card-title">🏝 LOBBY</div>
+    <div style="text-align:center;font-size:7px;color:#888;margin-bottom:6px;">SHARE THIS CODE WITH FRIENDS:</div>
+    <div id="lobby-code-display">-----</div>
+    <div class="lobby-hint">Friends go to the game and click JOIN LOBBY</div>
+    <div id="lobby-player-count">PLAYERS: 0 / 0</div>
+    <div id="lobby-players-list"></div>
+    <button class="btn-green" id="start-btn" disabled>⚔ START BATTLE!</button>
+    <button class="btn-gray" id="leave-lobby-btn" style="width:100%;margin-top:8px;">← LEAVE LOBBY</button>
+  </div>
+</div>
+
+<a href="/editor.html" class="editor-link">🎨 OPEN PIXALET STUDIO</a>
+
+<script>
+let myUsername = null, currentLobby = null, lobbyPollInterval = null;
+
+const API = '/api/game';
+
+async function api(action, body) {
+  if (body) {
+    const r = await fetch(`${API}?action=${action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return r.json();
+  } else {
+    const r = await fetch(`${API}?action=${action}`);
+    return r.json();
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showError(id, txt) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = txt; setTimeout(() => { el.textContent = ''; }, 3500); }
+}
+
+function renderLobbyPlayers(lobby) {
+  currentLobby = lobby;
+  document.getElementById('lobby-code-display').textContent = lobby.code;
+  document.getElementById('lobby-player-count').textContent =
+    `PLAYERS: ${lobby.players.length} / ${lobby.maxPlayers}`;
+
+  const list = document.getElementById('lobby-players-list');
+  list.innerHTML = lobby.players.map(u => `
+    <div class="player-pill ${u === lobby.host ? 'host-pill' : ''}">
+      <span>🧑 ${u}</span>
+      ${u === lobby.host ? '<span class="badge">HOST</span>' : '<span class="badge-alive">READY</span>'}
+    </div>`).join('');
+
+  const startBtn = document.getElementById('start-btn');
+  if (myUsername === lobby.host) {
+    startBtn.style.display = 'block';
+    startBtn.disabled = lobby.players.length < 2;
+    startBtn.textContent = lobby.players.length < 2
+      ? '⏳ WAITING FOR PLAYERS...'
+      : `⚔ START BATTLE! (${lobby.players.length}P)`;
+  } else {
+    startBtn.style.display = 'none';
+  }
+}
+
+// Poll lobby state for non-host players (so they see updates & detect game start)
+function startLobbyPolling(code) {
+  stopLobbyPolling();
+  lobbyPollInterval = setInterval(async () => {
+    try {
+      const data = await fetch(`${API}?action=lobby&code=${code}`).then(r => r.json());
+      if (data.error) { stopLobbyPolling(); return; }
+      const lobby = data.lobby;
+
+      // Detect game started — host will redirect, guests need polling to catch it
+      if (lobby.status === 'in_game') {
+        stopLobbyPolling();
+        // Guest needs to poll for their gameId — it was set when host started
+        // We store it in the lobby after creation
+        if (lobby.gameId) {
+          location.href = `game.html?gameId=${lobby.gameId}&username=${encodeURIComponent(myUsername)}`;
+        }
+        return;
+      }
+      renderLobbyPlayers(lobby);
+    } catch (e) { /* ignore transient errors */ }
+  }, 1500);
+}
+
+function stopLobbyPolling() {
+  if (lobbyPollInterval) { clearInterval(lobbyPollInterval); lobbyPollInterval = null; }
+}
+
+// Register
+document.getElementById('register-btn').onclick = async () => {
+  const name = document.getElementById('username-input').value.trim();
+  if (!name) return showError('error-msg', 'ENTER YOUR NAME!');
+  const data = await api('register', { username: name });
+  if (data.error) return showError('error-msg', data.error);
+  myUsername = data.username;
+  showScreen('screen-menu');
+};
+document.getElementById('username-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('register-btn').click();
+});
+
+// Host
+document.getElementById('host-btn').onclick = () => showScreen('screen-create');
+document.getElementById('create-lobby-btn').onclick = async () => {
+  const max = parseInt(document.getElementById('max-players-select').value) || 6;
+  const data = await api('create_lobby', { username: myUsername, maxPlayers: max });
+  if (data.error) return showError('error-msg3', data.error);
+  renderLobbyPlayers(data.lobby);
+  showScreen('screen-lobby');
+  startLobbyPolling(data.lobby.code);
+};
+
+// Join
+document.getElementById('join-btn').onclick = () => showScreen('screen-join');
+document.getElementById('join-lobby-btn').onclick = async () => {
+  const code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
+  if (code.length < 4) return showError('error-msg4', 'ENTER A VALID CODE');
+  const data = await api('join_lobby', { username: myUsername, code });
+  if (data.error) return showError('error-msg4', data.error);
+  renderLobbyPlayers(data.lobby);
+  showScreen('screen-lobby');
+  startLobbyPolling(code);
+};
+document.getElementById('lobby-code-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('join-lobby-btn').click();
+});
+
+// Start game (host only)
+document.getElementById('start-btn').onclick = async () => {
+  if (!currentLobby) return;
+  const data = await api('start_game', { username: myUsername, code: currentLobby.code });
+  if (data.error) return showError('error-msg2', data.error);
+  stopLobbyPolling();
+  // Save gameId so polling guests can find it
+  // Navigate host directly
+  location.href = `game.html?gameId=${data.gameId}&username=${encodeURIComponent(myUsername)}`;
+};
+
+// Leave lobby
+document.getElementById('leave-lobby-btn').onclick = async () => {
+  if (currentLobby) await api('leave_lobby', { username: myUsername, code: currentLobby.code });
+  stopLobbyPolling();
+  currentLobby = null;
+  showScreen('screen-menu');
+};
+</script>
+</body>
+</html>
