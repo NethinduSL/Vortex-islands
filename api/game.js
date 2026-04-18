@@ -1,7 +1,13 @@
 // ─── Vortex Islands — API v3 + Coin Economy + Public Lobbies ──────────────────
 const { v4: uuidv4 } = require('uuid');
-if (!global._vortexStore) global._vortexStore = { lobbies:{}, games:{} };
+if (!global._vortexStore) global._vortexStore = { lobbies:{}, games:{}, online:{} };
 const store = global._vortexStore;
+// Expire online players after 20s of no heartbeat
+function getOnlinePlayers() {
+  const now = Date.now();
+  Object.keys(store.online).forEach(u => { if (now - store.online[u].ts > 20000) delete store.online[u]; });
+  return Object.keys(store.online);
+}
 
 function seededRandom(seed) {
   let s = seed >>> 0;
@@ -56,7 +62,8 @@ function createGame(players, lobbyCode, bots) {
   return store.games[gameId]={
     gameId, players:[...players], alivePlayers:[...players],
     baseGrids, grids, scores, islands, moves:[],
-    phase:'rps', pendingRPS:{}, rpsWinner:null,
+    phase:'rps', pendingRPS:{}, rpsWinner:null, rpsWinners:[],
+    pendingActions:{}, // track who still needs to take action among winners
     gameOver:false, winner:null, lobbyCode, bots:bots||[], lastAction:Date.now()
   };
 }
@@ -67,7 +74,10 @@ function publicState(g) {
     grids:g.grids, scores:g.scores, islands:g.islands, moves:g.moves,
     phase:g.phase,
     pendingRPS:Object.fromEntries(Object.entries(g.pendingRPS).map(([k])=>[k,true])),
-    rpsWinner:g.rpsWinner, gameOver:g.gameOver, winner:g.winner, bots:g.bots||[]
+    rpsChoices:g.rpsChoices||{}, // visible choices after resolution
+    rpsWinner:g.rpsWinner, rpsWinners:g.rpsWinners||[],
+    pendingActions:g.pendingActions||{},
+    gameOver:g.gameOver, winner:g.winner, bots:g.bots||[]
   };
 }
 
@@ -243,26 +253,40 @@ function runBotMoves(g) {
       }
     });
     if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
+      const choices={...g.pendingRPS};
+      g.rpsChoices=choices;
       const winners=resolveMultiRPS(g.pendingRPS);
       const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
-      if (winners.length>1) {
+      if (winners.length===g.alivePlayers.length) {
         g.moves.unshift(`🤝 TIE — ${choiceStr}`);
-        g.pendingRPS={};
+        g.pendingRPS={}; g.rpsChoices={};
         runBotMoves(g);
       } else {
-        const w=winners[0];
-        g.scores[w]+=10;
-        g.rpsWinner=w; g.phase='action'; g.pendingRPS={};
-        awardCoin(g, w);
-        if (g.bots.includes(w)) {
-          const {act,target,fromInv}=botPickAction(g,w);
+        winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
+        g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
+        g.phase='action'; g.pendingRPS={};
+        winners.forEach(w=>awardCoin(g,w));
+        g.moves.unshift(`🏆 ${winners.join(', ')} WIN RPS (${choiceStr}) — each picks an action!`);
+        winners.filter(w=>g.bots.includes(w)).forEach(w=>{
+          const{act,target,fromInv}=botPickAction(g,w);
           applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
+          delete g.pendingActions[w];
+        });
+        if (Object.keys(g.pendingActions).length===0){
+          g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
         }
       }
     }
-  } else if (g.phase==='action'&&g.rpsWinner&&g.bots.includes(g.rpsWinner)) {
-    const {act,target,fromInv}=botPickAction(g,g.rpsWinner);
-    applyAction(g,g.rpsWinner,act,target?(target.name||target):null,fromInv||false);
+  } else if (g.phase==='action'&&g.pendingActions) {
+    const botActors=Object.keys(g.pendingActions).filter(w=>g.bots.includes(w));
+    botActors.forEach(w=>{
+      const{act,target,fromInv}=botPickAction(g,w);
+      applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
+      delete g.pendingActions[w];
+    });
+    if (Object.keys(g.pendingActions).length===0&&!g.gameOver){
+      g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+    }
   }
 }
 
@@ -274,6 +298,7 @@ const PROMO_CODES={
   'VORTEX2025':{coins:5,desc:'5 FREE COINS!'},
   'ISLAND10':{coins:3,desc:'3 BONUS COINS!'},
   'BATTLEPASS':{coins:10,desc:'10 COINS LOADED!'},
+  'EBOX':{coins:0,shields:3,freeIsland:true,desc:'FREE ISLAND + 3 SHIELDS ACTIVATED!'},
 };
 if (!global._vortexPromo) global._vortexPromo={};
 const promoUsed=global._vortexPromo;
@@ -305,6 +330,13 @@ module.exports=async function handler(req,res){
       if (!g) return fail(res,'GAME NOT FOUND',404);
       runBotMoves(g);
       return ok(res,{state:publicState(g)});
+    }
+    if (action==='online_players') {
+      const players = getOnlinePlayers();
+      const invites = req.query.username ? (store.online[req.query.username]?.pendingInvites || []) : [];
+      // Clear invites after reading
+      if (req.query.username && store.online[req.query.username]) store.online[req.query.username].pendingInvites = [];
+      return ok(res,{players, count:players.length, invites});
     }
     return fail(res,'Unknown action',400);
   }
@@ -409,20 +441,32 @@ module.exports=async function handler(req,res){
         if (g.alivePlayers.includes(bot)&&!g.pendingRPS[bot]) g.pendingRPS[bot]=botPickRPS();
       });
       if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
+        const choices = {...g.pendingRPS};
+        g.rpsChoices = choices; // store for display
         const winners=resolveMultiRPS(g.pendingRPS);
         const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
-        if (winners.length>1) {
+        if (winners.length===g.alivePlayers.length) {
+          // Full tie — clear and retry
           g.moves.unshift(`🤝 TIE — ${choiceStr}`);
-          g.pendingRPS={};
+          g.pendingRPS={}; g.rpsChoices={};
           runBotMoves(g);
         } else {
-          const w=winners[0];
-          g.scores[w]+=10; g.rpsWinner=w; g.phase='action'; g.pendingRPS={};
-          awardCoin(g,w);
-          if (g.bots.includes(w)) {
+          // Multiple OR single winners — each gets an action
+          winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
+          g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
+          g.phase='action'; g.pendingRPS={};
+          winners.forEach(w=>awardCoin(g,w));
+          const winnerStr=winners.join(', ');
+          g.moves.unshift(`🏆 ${winnerStr} WIN RPS (${choiceStr}) — each picks an action!`);
+          // Auto-play bot winners
+          winners.filter(w=>g.bots.includes(w)).forEach(w=>{
             const{act,target,fromInv}=botPickAction(g,w);
-            applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
-          }
+            const result=applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
+            delete g.pendingActions[w];
+            if (Object.keys(g.pendingActions).length===0){
+              g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+            }
+          });
         }
       }
       return ok(res,{state:publicState(g)});
@@ -431,13 +475,43 @@ module.exports=async function handler(req,res){
       const{gameId,username,action:act,targetPlayer,useInventory}=body;
       const g=store.games[gameId];
       if (!g) return fail(res,'GAME NOT FOUND');
-      if (g.gameOver||g.phase!=='action'||g.rpsWinner!==username) return fail(res,'NOT YOUR TURN');
+      if (g.gameOver||g.phase!=='action') return fail(res,'NOT YOUR TURN');
+      // Support multi-winner: check if this player is a pending action winner
+      const winners=g.rpsWinners||[g.rpsWinner];
+      if (!winners.includes(username)||!g.pendingActions[username]) return fail(res,'NOT YOUR TURN');
       g.lastAction=Date.now();
       const result=applyAction(g,username,act,targetPlayer,useInventory||false);
       if (result.error) return fail(res,result.error);
+      delete g.pendingActions[username];
+      // If all winners have acted, go back to RPS
+      if (Object.keys(g.pendingActions).length===0){
+        if (!result.gameOver){
+          g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+        }
+      } else {
+        // Still have pending actions from other winners
+        g.rpsWinner=Object.keys(g.pendingActions)[0];
+      }
       runBotMoves(g);
       if (result.gameOver) return ok(res,{gameOver:true,winner:result.winner,state:publicState(g)});
       return ok(res,{state:publicState(g)});
+    }
+    if (action==='heartbeat') {
+      const{username}=body;
+      if (!username) return fail(res,'NO USERNAME');
+      if (!store.online[username]) store.online[username]={ts:Date.now(),pendingInvites:[]};
+      else store.online[username].ts=Date.now();
+      return ok(res,{ok:true,online:getOnlinePlayers().length});
+    }
+    if (action==='send_invite') {
+      const{from,to,lobbyCode}=body;
+      if (!from||!to||!lobbyCode) return fail(res,'MISSING FIELDS');
+      if (!store.online[to]) return fail(res,'PLAYER NOT ONLINE');
+      if (!store.online[to].pendingInvites) store.online[to].pendingInvites=[];
+      // Avoid duplicate invites
+      store.online[to].pendingInvites=store.online[to].pendingInvites.filter(i=>i.lobbyCode!==lobbyCode);
+      store.online[to].pendingInvites.push({from,lobbyCode,ts:Date.now()});
+      return ok(res,{ok:true});
     }
     if (action==='redeem_promo') {
       const{gameId,username,code:promoCode}=body;
@@ -449,7 +523,20 @@ module.exports=async function handler(req,res){
       const key=`${gameId}:${username}:${promoCode.toUpperCase()}`;
       if (promoUsed[key]) return fail(res,'PROMO ALREADY USED IN THIS GAME');
       promoUsed[key]=true;
-      g.islands[username].coins=(g.islands[username].coins||0)+promo.coins;
+      if (promo.coins) g.islands[username].coins=(g.islands[username].coins||0)+promo.coins;
+      if (promo.shields) {
+        const prev=g.islands[username].shields||0;
+        g.islands[username].shields=Math.min(3,prev+promo.shields);
+      }
+      if (promo.freeIsland) {
+        // Restore all quadrants (heal island back to full)
+        g.islands[username].quadrants=[];
+        g.grids[username]=g.baseGrids[username].map(r=>[...r]);
+        if (!g.alivePlayers.includes(username)) {
+          g.alivePlayers.push(username);
+          g.islands[username].alive=true;
+        }
+      }
       g.moves.unshift(`🎁 ${username} redeemed promo "${promoCode.toUpperCase()}": ${promo.desc}`);
       return ok(res,{coins:g.islands[username].coins,desc:promo.desc,state:publicState(g)});
     }
