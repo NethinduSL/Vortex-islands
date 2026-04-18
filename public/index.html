@@ -302,6 +302,25 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
   padding:2px 6px;
   margin-left:6px;
 }
+.badge-bot{
+  font-size: clamp(5px,1.2vw,6px);
+  background:#0088cc;
+  color:#fff;
+  padding:2px 6px;
+  margin-left:6px;
+}
+.player-pill.bot-pill{border-color:#0088cc44;color:#00c8ff;}
+.btn-rm-bot{
+  font-family:'Press Start 2P',monospace;
+  font-size:5px;
+  background:transparent;
+  border:1px solid #333;
+  color:#555;
+  padding:2px 5px;
+  cursor:pointer;
+  box-shadow:none;
+  margin-left:6px;
+}
 
 /* === START BTN === */
 #start-btn{
@@ -443,6 +462,9 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
     <div class="lobby-hint">Friends join via VORTEX ISLANDS → JOIN LOBBY</div>
     <div id="lobby-player-count">PLAYERS: 0 / 0</div>
     <div id="lobby-players-list"></div>
+    <div id="bot-controls" style="display:none;margin-bottom:10px;">
+      <button class="btn-cyan" id="add-bot-btn" style="width:100%;font-size:clamp(6px,1.8vw,8px);">🤖 ADD BOT</button>
+    </div>
     <button class="btn-green" id="start-btn" disabled>⚔ START BATTLE!</button>
     <button class="btn-gray" id="leave-lobby-btn" style="width:100%;margin-top:8px;">← LEAVE LOBBY</button>
   </div>
@@ -490,17 +512,36 @@ function renderLobbyPlayers(lobby) {
   document.getElementById('lobby-player-count').textContent =
     `PLAYERS: ${lobby.players.length} / ${lobby.maxPlayers}`;
 
+  const isHost = myUsername === lobby.host;
+  const bots = lobby.bots || [];
+
   const list = document.getElementById('lobby-players-list');
-  list.innerHTML = lobby.players.map(u => `
-    <div class="player-pill ${u === lobby.host ? 'host-pill' : ''}">
-      <span>🧑 ${u}</span>
-      ${u === lobby.host
-        ? '<span class="badge">HOST</span>'
-        : '<span class="badge-alive">READY</span>'}
-    </div>`).join('');
+  list.innerHTML = lobby.players.map(u => {
+    const isBot = bots.includes(u);
+    const isThisHost = u === lobby.host;
+    return `
+    <div class="player-pill ${isThisHost ? 'host-pill' : isBot ? 'bot-pill' : ''}">
+      <span>${isBot ? '🤖' : '🧑'} ${u}</span>
+      <span style="display:flex;align-items:center;">
+        ${isThisHost
+          ? '<span class="badge">HOST</span>'
+          : isBot
+            ? `<span class="badge-bot">BOT</span>${isHost ? `<button class="btn-rm-bot" onclick="removeBot('${u}')">✕</button>` : ''}`
+            : '<span class="badge-alive">READY</span>'}
+      </span>
+    </div>`;
+  }).join('');
+
+  // Show/hide add-bot button (host only, not full)
+  const botControls = document.getElementById('bot-controls');
+  if (isHost && lobby.players.length < lobby.maxPlayers) {
+    botControls.style.display = 'block';
+  } else {
+    botControls.style.display = 'none';
+  }
 
   const startBtn = document.getElementById('start-btn');
-  if (myUsername === lobby.host) {
+  if (isHost) {
     startBtn.style.display = 'block';
     startBtn.disabled = lobby.players.length < 2;
     startBtn.textContent = lobby.players.length < 2
@@ -597,6 +638,22 @@ document.getElementById('leave-lobby-btn').onclick = async () => {
   setStatus('⚡ READY');
   showScreen('screen-menu');
 };
+
+// Add bot
+document.getElementById('add-bot-btn').onclick = async () => {
+  if (!currentLobby) return;
+  const data = await api('add_bot', { username: myUsername, code: currentLobby.code });
+  if (data.error) return showError('error-msg2', data.error);
+  renderLobbyPlayers(data.lobby);
+  setStatus(`🤖 BOT ADDED!`);
+};
+
+async function removeBot(botName) {
+  if (!currentLobby) return;
+  const data = await api('remove_bot', { username: myUsername, code: currentLobby.code, botName });
+  if (data.error) return;
+  renderLobbyPlayers(data.lobby);
+}
 </script>
 </body>
 </html>
