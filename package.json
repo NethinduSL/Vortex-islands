@@ -1,0 +1,8 @@
+{
+  "name": "vortex-islands",
+  "version": "2.0.0",
+  "description": "Vortex Islands — Vercel-compatible (no WebSockets)",
+  "dependencies": {
+    "uuid": "^9.0.0"
+  }
+}
