@@ -172,6 +172,7 @@ button.ui-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
 <body>
 <div id="conn-bar">
   <span id="conn-text"><span class="spinner"></span>LOADING BATTLE...</span>
+  <span style="font-size:clamp(4px,1vw,5px);color:#555;letter-spacing:1px;opacity:0.7;">BY NETHINDU THAMINDA</span>
   <button id="settings-btn" onclick="openSettings()">⚙ SETTINGS</button>
 </div>
 <div id="main">
@@ -273,6 +274,7 @@ button.ui-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
     </div>
     <hr class="settings-divider"/>
     <div class="settings-subtitle">🎁 PROMO CODE</div>
+    <div style="font-size:clamp(4px,1.1vw,5px);color:#555;letter-spacing:1px;margin-bottom:6px;">TRY: EBOX · VORTEX2025 · BATTLEPASS</div>
     <div class="promo-row">
       <input type="text" id="promo-input" placeholder="ENTER CODE" maxlength="16" autocomplete="off"/>
       <button onclick="redeemPromo()">REDEEM</button>
@@ -290,15 +292,25 @@ const CELL_COLORS = {
   stone:'#8a9aa0', dirt:'#9a6b3e', sand:'#d4b06a'
 };
 
-// ══ HD island sizing — 32×16 grid ═════════════════════
-// Increased pixel sizes significantly for crisp, detailed look
-function getIslandSize() {
+// ══ HD island sizing — scales DOWN as player count grows ══
+// 2 players = huge, 3-4 = medium, 5-6 = small
+let _playerCount = 2;
+function getIslandSize(playerCount) {
+  const pc = playerCount || _playerCount || 2;
   const vw = window.innerWidth;
-  if (vw >= 1100) return { w: 480, h: 240, cw: 15, ch: 15 };
-  if (vw >= 800)  return { w: 384, h: 192, cw: 12, ch: 12 };
-  if (vw >= 600)  return { w: 320, h: 160, cw: 10, ch: 10 };
-  if (vw >= 420)  return { w: 256, h: 128, cw: 8,  ch: 8  };
-  return            { w: 192, h: 96,  cw: 6,  ch: 6  };
+  // Base size tiers per player count
+  const tiers = {
+    2: [ [1100,560,280,17,17],[800,448,224,14,14],[600,384,192,12,12],[420,320,160,10,10],[0,240,120,7,7] ],
+    3: [ [1100,420,210,13,13],[800,336,168,10,10],[600,288,144,9,9 ],[420,240,120,7,7 ],[0,192,96, 6,6 ] ],
+    4: [ [1100,320,160,10,10],[800,256,128,8,8  ],[600,224,112,7,7 ],[420,192,96, 6,6 ],[0,160,80, 5,5 ] ],
+    5: [ [1100,256,128,8,8  ],[800,224,112,7,7  ],[600,192,96, 6,6 ],[420,160,80, 5,5 ],[0,128,64, 4,4 ] ],
+    6: [ [1100,224,112,7,7  ],[800,192,96, 6,6  ],[600,160,80, 5,5 ],[420,128,64, 4,4 ],[0,112,56, 3,3 ] ],
+  };
+  const tier = tiers[Math.min(6, Math.max(2, pc))];
+  for (const [minVw, w, h, cw, ch] of tier) {
+    if (vw >= minVw) return { w, h, cw, ch };
+  }
+  return { w:192, h:96, cw:6, ch:6 };
 }
 const GW = 32, GH = 16; // updated to match new grid
 
@@ -326,8 +338,9 @@ function initIcons() {
 }
 
 // ══ Island rendering — HD with pixel detail ════════════
-function renderIslandCanvas(canvas, grid, shields) {
-  const sz = getIslandSize();
+const RPS_EMOJI = { rock:'🪨', paper:'📄', scissors:'✂️' };
+function renderIslandCanvas(canvas, grid, shields, rpsChoice, rpsState, isWinner) {
+  const sz = getIslandSize(_playerCount);
   canvas.width = sz.w; canvas.height = sz.h;
   const CW = sz.w / GW, CH = sz.h / GH;
   const ctx = canvas.getContext('2d');
@@ -397,6 +410,50 @@ function renderIslandCanvas(canvas, grid, shields) {
     }
     ctx.shadowBlur = 0;
   }
+
+  // ── RPS pick overlay ──────────────────────────────────
+  if (rpsChoice) {
+    const emoji = RPS_EMOJI[rpsChoice] || rpsChoice;
+    const fontSize = Math.max(18, Math.floor(sz.w * 0.28));
+    // Semi-transparent overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, 0, sz.w, sz.h);
+    ctx.font = `${fontSize}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, sz.w / 2, sz.h / 2);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    // Winner glow
+    if (rpsState === 'winner') {
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 20;
+      ctx.strokeRect(2, 2, sz.w - 4, sz.h - 4);
+      ctx.shadowBlur = 0;
+      // WIN label
+      ctx.fillStyle = '#ffd700';
+      ctx.font = `bold ${Math.max(8, Math.floor(sz.w * 0.08))}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('WIN!', sz.w / 2, sz.h - Math.max(8, Math.floor(sz.h * 0.1)));
+      ctx.textAlign = 'left';
+    } else if (rpsState === 'loser') {
+      ctx.strokeStyle = '#ff1744';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ff1744';
+      ctx.shadowBlur = 10;
+      ctx.strokeRect(2, 2, sz.w - 4, sz.h - 4);
+      ctx.shadowBlur = 0;
+      // X over losers
+      ctx.strokeStyle = 'rgba(255,23,68,0.6)';
+      ctx.lineWidth = Math.max(2, sz.w / 40);
+      ctx.beginPath();
+      ctx.moveTo(sz.w * 0.1, sz.h * 0.1); ctx.lineTo(sz.w * 0.9, sz.h * 0.9);
+      ctx.moveTo(sz.w * 0.9, sz.h * 0.1); ctx.lineTo(sz.w * 0.1, sz.h * 0.9);
+      ctx.stroke();
+    }
+  }
 }
 
 // ══ Setup ═════════════════════════════════════════════
@@ -408,15 +465,26 @@ let gameState = null, myRPSSubmitted = false, pendingAction = null;
 let pollInterval = null, gameOver = false, failCount = 0;
 let logVisible = false;
 
+// ── Fetch with timeout to prevent hanging requests ──
+async function fetchWithTimeout(url, opts, ms) {
+  ms = ms || 8000;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { ...opts, signal: ctrl.signal });
+    clearTimeout(tid);
+    return r;
+  } catch(e) { clearTimeout(tid); throw e; }
+}
 async function post(action, body) {
-  const r = await fetch(`${API}?action=${action}`, {
+  const r = await fetchWithTimeout(`${API}?action=${action}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   return r.json();
 }
 async function getState() {
-  return (await fetch(`${API}?action=game&gameId=${GAME_ID}`)).json();
+  return (await fetchWithTimeout(`${API}?action=game&gameId=${GAME_ID}`)).json();
 }
 
 // ══ Settings ═══════════════════════════════════════════
@@ -449,8 +517,14 @@ async function redeemPromo() {
 
 // ══ Render islands ════════════════════════════════════
 function renderIslands(state) {
+  // Update global player count for island sizing
+  _playerCount = (state.alivePlayers || state.players || []).length || 2;
   const row = document.getElementById('islands-row');
   const bots = state.bots || [];
+  // Build RPS display info
+  const rpsChoices = state.rpsChoices || {};
+  const rpsWinners = state.rpsWinners || (state.rpsWinner ? [state.rpsWinner] : []);
+  const showRPS = Object.keys(rpsChoices).length > 0;
   state.players.forEach(u => {
     const isAlive = state.islands[u] && state.islands[u].alive !== false;
     const isMe = u === MY_NAME;
@@ -477,7 +551,14 @@ function renderIslands(state) {
     if (tag) tag.className = isBot ? 'island-name-tag bot-tag' : 'island-name-tag' + (isMe ? ' my-tag' : '');
 
     const canvas = document.getElementById('canvas-' + u);
-    if (canvas && state.grids[u]) renderIslandCanvas(canvas, state.grids[u], state.islands[u]?.shields||0);
+    if (canvas && state.grids[u]) {
+      const choice = rpsChoices[u] || null;
+      let rpsState = null;
+      if (showRPS && choice) {
+        rpsState = rpsWinners.includes(u) ? 'winner' : 'loser';
+      }
+      renderIslandCanvas(canvas, state.grids[u], state.islands[u]?.shields||0, choice, rpsState);
+    }
 
     const statsEl = document.getElementById('stats-' + u);
     if (statsEl && state.islands[u]) {
@@ -538,8 +619,16 @@ function updateUI(state) {
     }
     if (!state.pendingRPS[MY_NAME]) myRPSSubmitted = false;
   } else if (state.phase === 'action') {
-    if (state.rpsWinner === MY_NAME) {
-      pt.textContent = '✨ RPS WIN — CHOOSE ACTION!'; pt.className = 'text-cyan';
+    const rpsWinners = state.rpsWinners || (state.rpsWinner ? [state.rpsWinner] : []);
+    const pendingActions = state.pendingActions || {};
+    const myTurn = rpsWinners.includes(MY_NAME) && pendingActions[MY_NAME];
+    if (myTurn) {
+      const otherWinners = rpsWinners.filter(w => w !== MY_NAME && pendingActions[w]);
+      let phaseMsg = '✨ RPS WIN — CHOOSE ACTION!';
+      if (rpsWinners.length > 1) {
+        phaseMsg = `✨ YOU + ${rpsWinners.length - 1} OTHERS WON RPS — PICK ACTION!`;
+      }
+      pt.textContent = phaseMsg; pt.className = 'text-cyan';
       document.getElementById('action-label').style.display = 'block';
       document.getElementById('action-btns').style.display = 'flex';
       ['btn-cannon','btn-slicer','btn-shield','btn-store'].forEach(id => {
@@ -555,7 +644,6 @@ function updateUI(state) {
         if (myInv.cannons > 0) { const b = document.getElementById('btn-inv-cannon'); if (b) b.disabled = false; }
         if (myInv.slicers > 0) { const b = document.getElementById('btn-inv-slicer'); if (b) b.disabled = false; }
       }
-      // Show coin shop if player has coins
       if (myCoins >= 1) {
         document.getElementById('shop-section').classList.add('visible');
         ['btn-buy-cannon','btn-buy-slicer','btn-buy-shield'].forEach(id => {
@@ -563,7 +651,9 @@ function updateUI(state) {
         });
       }
     } else {
-      pt.textContent = `⏳ ${state.rpsWinner||'?'} IS CHOOSING...`; pt.className = 'text-yellow';
+      const stillPending = Object.keys(pendingActions);
+      const whoMsg = stillPending.length > 0 ? stillPending.join(', ') : (state.rpsWinner || '?');
+      pt.textContent = `⏳ ${whoMsg} IS CHOOSING...`; pt.className = 'text-yellow';
     }
   }
 
@@ -637,10 +727,28 @@ function buyItem(act) {
 // ══ Polling ═══════════════════════════════════════════
 function stopPolling() { if (pollInterval) { clearInterval(pollInterval); pollInterval = null; } }
 let lastHash = '';
+// ── Poll with reconnect grace — game stays alive through connection blips ──
+let reconnectTimer = null;
 async function poll() {
   try {
     const data = await getState();
-    if (data.error) { failCount++; return; }
+    if (data.error) {
+      failCount++;
+      // Don't crash the game — server may have had a hiccup
+      if (failCount >= 4) {
+        const bar = document.getElementById('conn-text');
+        bar.innerHTML = '<span class="spinner"></span>RECONNECTING...';
+        bar.parentElement.className = '';
+      }
+      // After 120 fails (~3.6 min) show lost message but DON'T stop polling
+      // This way if server comes back, game resumes automatically
+      if (failCount >= 120) {
+        const bar = document.getElementById('conn-text');
+        bar.textContent = '⚠ CONNECTION WEAK — STILL TRYING...';
+        bar.parentElement.className = 'err';
+      }
+      return;
+    }
     failCount = 0;
     const state = data.state;
     const hash = state.phase+(state.moves?.length||0)+JSON.stringify(state.pendingRPS)+JSON.stringify(state.islands);
@@ -655,11 +763,15 @@ async function poll() {
       bar.innerHTML = '<span class="spinner"></span>RECONNECTING...';
       bar.parentElement.className = '';
     }
-    if (failCount >= 40) {
+    // Never permanently stop polling — always keep trying to reconnect
+    // Only show lost after very long time (5+ minutes)
+    if (failCount >= 200) {
       const bar = document.getElementById('conn-text');
-      bar.textContent = '❌ CONNECTION LOST — REFRESH';
+      bar.textContent = '❌ CONNECTION LOST — REFRESH TO REJOIN';
       bar.parentElement.className = 'err';
       stopPolling();
+      // Auto-retry init after 5s so the page can self-heal
+      setTimeout(() => { gameOver = false; failCount = 0; init(1); }, 5000);
     }
   }
 }
@@ -670,21 +782,38 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => { if (gameState) renderIslands(gameState); initIcons(); }, 200);
 });
 
-async function init() {
+// ── Robust init with retries (fixes "GAME NOT FOUND" on server cold start) ──
+async function init(attempt) {
+  attempt = attempt || 1;
+  const MAX_ATTEMPTS = 8;
   initIcons();
   const bar = document.getElementById('conn-text');
+  bar.innerHTML = `<span class="spinner"></span>CONNECTING... (${attempt}/${MAX_ATTEMPTS})`;
   try {
     const data = await getState();
-    if (data.error) { bar.textContent = '❌ GAME NOT FOUND'; bar.parentElement.className = 'err'; return; }
+    if (data.error) {
+      if (attempt < MAX_ATTEMPTS) {
+        // Server may still be waking up — retry with backoff
+        bar.innerHTML = `<span class="spinner"></span>RETRYING... (${attempt}/${MAX_ATTEMPTS})`;
+        setTimeout(() => init(attempt + 1), 1200 * attempt);
+        return;
+      }
+      bar.textContent = '❌ GAME NOT FOUND — CHECK YOUR LINK'; bar.parentElement.className = 'err'; return;
+    }
     bar.textContent = '⚡ LIVE'; bar.parentElement.className = 'ok';
     updateUI(data.state);
     if (data.state.gameOver) { showGameOver(data.state.winner, data.state); return; }
-    pollInterval = setInterval(poll, 1500);
+    pollInterval = setInterval(poll, 1800);
   } catch(e) {
+    if (attempt < MAX_ATTEMPTS) {
+      bar.innerHTML = `<span class="spinner"></span>RETRYING... (${attempt}/${MAX_ATTEMPTS})`;
+      setTimeout(() => init(attempt + 1), 1500 * attempt);
+      return;
+    }
     bar.textContent = '❌ FAILED TO LOAD — REFRESH'; bar.parentElement.className = 'err';
   }
 }
-init();
+init(1);
 </script>
 </body>
 </html>
