@@ -7,425 +7,383 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:#5c94fc;font-family:'Press Start 2P',monospace;min-height:100vh;display:flex;flex-direction:column;
-  background-image:repeating-linear-gradient(rgba(0,0,0,0.08) 0px,rgba(0,0,0,0.08) 1px,transparent 1px,transparent 2px),
-    radial-gradient(ellipse 200px 80px at 10% 15%,rgba(255,255,255,0.5) 0%,transparent 70%),
-    radial-gradient(ellipse 150px 60px at 85% 8%,rgba(255,255,255,0.45) 0%,transparent 68%);}
-#conn-bar{background:#1a1a1a;border-bottom:3px solid #ffd700;padding:8px 16px;font-size:8px;color:#ffd700;text-align:center;letter-spacing:2px;}
+body{background:#1a6fad;font-family:'Press Start 2P',monospace;min-height:100vh;display:flex;flex-direction:column;
+  background-image:radial-gradient(ellipse 300px 120px at 20% 80%,rgba(255,255,255,.06) 0%,transparent 70%),
+    radial-gradient(ellipse 200px 80px at 75% 15%,rgba(255,255,255,.08) 0%,transparent 70%),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 40px);}
+#conn-bar{background:#0d0d0d;border-bottom:3px solid #ffd700;padding:7px 16px;font-size:7px;color:#ffd700;text-align:center;letter-spacing:2px;}
 #conn-bar.ok{color:#39ff14;} #conn-bar.err{color:#ff1744;}
 .spinner{display:inline-block;width:8px;height:8px;border:2px solid rgba(255,215,0,.3);border-top-color:#ffd700;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg)}}
-#main{display:flex;flex-direction:column;align-items:center;padding:10px;gap:10px;}
-#islands-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%;}
-.island-panel{display:flex;flex-direction:column;align-items:center;gap:4px;opacity:1;transition:opacity .3s;}
-.island-panel.eliminated{opacity:.35;filter:grayscale(1);}
-.island-name-tag{font-size:6px;background:#1a1a1a;border:2px solid #ffd700;padding:3px 7px;color:#ffd700;box-shadow:2px 2px 0 #000;white-space:nowrap;}
+#main{display:flex;flex-direction:column;align-items:center;padding:12px 8px;gap:12px;}
+#islands-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;width:100%;}
+.island-panel{display:flex;flex-direction:column;align-items:center;gap:5px;transition:opacity .3s;}
+.island-panel.eliminated{opacity:.28;filter:grayscale(1) brightness(.5);}
+.island-name-tag{font-size:6px;background:#0d0d0d;border:2px solid #ffd700;padding:3px 8px;color:#ffd700;white-space:nowrap;letter-spacing:1px;}
 .island-name-tag.my-tag{border-color:#39ff14;color:#39ff14;}
-.island-name-tag.turn-tag{border-color:#ff9800;color:#ff9800;animation:pulse .7s infinite alternate;}
-@keyframes pulse{to{box-shadow:0 0 8px #ff9800;}}
-.grid-wrapper{position:relative;line-height:0;}
-.island-grid{display:grid;grid-template-columns:repeat(20,12px);grid-template-rows:repeat(10,12px);
-  image-rendering:pixelated;gap:0;outline:2px solid #ffd700;box-shadow:3px 3px 0 #000,5px 5px 0 #8b4513;}
-.grid-cell{width:12px;height:12px;}
-.shield-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,170,255,0.22);pointer-events:none;display:none;}
-.shield-overlay.active{display:block;}
-.shield-overlay.active::after{content:'';position:absolute;inset:0;outline:2px solid rgba(0,170,255,0.8);box-shadow:inset 0 0 10px rgba(0,170,255,0.4);}
-.island-stats{font-size:6px;color:#1a1a1a;background:rgba(255,255,255,0.85);border:2px solid #1a1a1a;
-  padding:4px 8px;text-align:center;line-height:2;box-shadow:2px 2px 0 #000;}
-.elim-badge{font-size:6px;background:#ff1744;color:#fff;padding:2px 6px;letter-spacing:1px;}
-#controls{width:100%;max-width:760px;background:#1a1a1a;border:3px solid #ffd700;box-shadow:4px 4px 0 #000,6px 6px 0 #8b4513;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.island-canvas{display:block;image-rendering:pixelated;border-radius:3px;}
+.island-stats{font-size:5px;color:#fff;background:rgba(0,0,0,.6);padding:3px 8px;text-align:center;line-height:2;border-radius:2px;white-space:nowrap;}
+.elim-badge{font-size:5px;background:#ff1744;color:#fff;padding:2px 6px;}
+.inv-badge{font-size:5px;background:rgba(0,0,0,.7);border:1px solid #555;color:#ffd700;padding:2px 6px;letter-spacing:1px;border-radius:2px;}
+#controls{width:100%;max-width:800px;background:rgba(8,8,8,.92);border:3px solid #ffd700;box-shadow:4px 4px 0 #000;padding:12px;display:flex;flex-direction:column;align-items:center;gap:10px;}
 #phase-text{font-size:8px;text-align:center;letter-spacing:1px;min-height:18px;}
-.text-green{color:#39ff14;} .text-yellow{color:#ffd700;} .text-cyan{color:#00aaff;} .text-white{color:#fff;} .text-red{color:#ff1744;}
+.text-green{color:#39ff14;}.text-yellow{color:#ffd700;}.text-cyan{color:#00aaff;}.text-red{color:#ff1744;}.text-orange{color:#ff9800;}
 .btn-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
-button.game-btn{font-family:'Press Start 2P',monospace;font-size:7px;cursor:pointer;border:none;padding:0;
-  box-shadow:3px 3px 0 #000;text-transform:uppercase;letter-spacing:1px;display:flex;flex-direction:column;align-items:center;
-  overflow:hidden;transition:transform .05s,box-shadow .05s;min-width:72px;}
+button.game-btn{font-family:'Press Start 2P',monospace;font-size:6px;cursor:pointer;border:none;padding:0;
+  box-shadow:3px 3px 0 #000;text-transform:uppercase;letter-spacing:1px;
+  display:flex;flex-direction:column;align-items:center;overflow:hidden;transition:transform .05s,box-shadow .05s;min-width:70px;}
 button.game-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
-button.game-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
-.btn-icon{width:40px;height:40px;image-rendering:pixelated;margin:5px auto 3px;position:relative;}
-.btn-label{font-size:6px;padding:3px 6px 5px;width:100%;text-align:center;}
-.btn-rps{background:#e53935;} .btn-rps .btn-label{background:#c62828;color:#fff;}
-.btn-action{background:#1565c0;} .btn-action .btn-label{background:#0d47a1;color:#fff;}
+button.game-btn:disabled{opacity:.3;cursor:not-allowed;box-shadow:none;}
+.btn-icon{width:36px;height:36px;image-rendering:pixelated;margin:5px auto 3px;}
+.btn-label{font-size:5px;padding:3px 4px 5px;width:100%;text-align:center;}
+.btn-label small{display:block;font-size:4px;opacity:.7;margin-top:2px;}
+.btn-rps{background:#b71c1c;}.btn-rps .btn-label{background:#c62828;color:#fff;}
+.btn-action{background:#1a237e;}.btn-action .btn-label{background:#283593;color:#fff;}
+.btn-inv{background:#1b5e20;}.btn-inv .btn-label{background:#2e7d32;color:#fff;}
+.btn-store{background:#4a148c;}.btn-store .btn-label{background:#6a1b9a;color:#fff;}
+.section-label{font-size:5px;color:#666;letter-spacing:2px;margin-top:2px;}
 #flash-msg{font-size:7px;color:#ff4500;min-height:14px;text-align:center;letter-spacing:1px;}
+.rps-waiting-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;font-size:5px;color:#666;}
+.rps-pip{padding:3px 6px;border:1px solid #333;color:#555;}
+.rps-pip.done{border-color:#39ff14;color:#39ff14;}
 #target-selector{display:none;flex-direction:column;align-items:center;gap:6px;width:100%;}
 #target-selector.visible{display:flex;}
 #target-label{font-size:7px;color:#ffd700;letter-spacing:1px;}
 #target-btn-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
-.target-btn{font-family:'Press Start 2P',monospace;font-size:7px;cursor:pointer;border:2px solid #ffd700;
-  background:#1a1a1a;color:#ffd700;padding:8px 12px;box-shadow:2px 2px 0 #000;letter-spacing:1px;}
-.target-btn:hover{background:#2a2a2a;}
-.target-btn:active{transform:translate(1px,1px);}
-#log-section{width:100%;max-width:760px;background:#1a1a1a;border:3px solid #ffd700;box-shadow:4px 4px 0 #000;padding:10px;}
-#log-title{font-size:7px;color:#ffd700;margin-bottom:8px;letter-spacing:2px;}
-#move-log{max-height:100px;overflow-y:auto;font-size:6px;color:#aaa;line-height:2;}
-#move-log p{border-bottom:1px solid #222;padding:2px 0;}
-#gameover-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:100;}
+.target-btn{font-family:'Press Start 2P',monospace;font-size:6px;cursor:pointer;border:2px solid #ffd700;background:#111;color:#ffd700;padding:8px 12px;box-shadow:2px 2px 0 #000;letter-spacing:1px;}
+.target-btn:hover{background:#222;}
+#log-section{width:100%;max-width:800px;background:rgba(8,8,8,.85);border:2px solid #222;padding:10px;}
+#log-title{font-size:6px;color:#ffd700;margin-bottom:8px;letter-spacing:2px;}
+#move-log{max-height:90px;overflow-y:auto;font-size:5px;color:#777;line-height:2.2;}
+#move-log p{border-bottom:1px solid #111;padding:1px 0;}
+#gameover-overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:100;}
 #gameover-overlay.visible{display:flex;}
-#gameover-title{font-size:clamp(14px,4vw,24px);text-align:center;}
+#gameover-title{font-size:clamp(14px,4vw,22px);text-align:center;}
 .win-text{color:#ffd700;text-shadow:4px 4px 0 #8b6914,0 0 20px #ffd700;}
 .lose-text{color:#ff1744;text-shadow:4px 4px 0 #8b0000;}
-#gameover-scores{font-size:8px;color:#ccc;text-align:center;line-height:2.5;}
-button.ui-btn{font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;border:none;padding:10px 16px;box-shadow:4px 4px 0 #000;text-transform:uppercase;letter-spacing:1px;}
+#gameover-scores{font-size:7px;color:#ccc;text-align:center;line-height:2.5;}
+button.ui-btn{font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;border:none;padding:10px 18px;box-shadow:4px 4px 0 #000;text-transform:uppercase;}
 button.ui-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
-.btn-yellow-ui{background:#ffd700;color:#1a1a1a;} .btn-red-ui{background:#e53935;color:#fff;}
-.rps-waiting-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;font-size:6px;color:#888;}
-.rps-pip{padding:3px 8px;border:1px solid #444;color:#888;}
-.rps-pip.done{border-color:#39ff14;color:#39ff14;}
+.btn-yellow-ui{background:#ffd700;color:#1a1a1a;}
 </style>
 </head>
 <body>
-<div id="conn-bar"><span class="spinner"></span>LOADING GAME...</div>
+<div id="conn-bar"><span class="spinner"></span>LOADING BATTLE...</div>
 <div id="main">
   <div id="islands-row"></div>
-
   <div id="controls">
     <div id="phase-text" class="text-yellow">WAITING...</div>
     <div id="rps-waiting-row" class="rps-waiting-row"></div>
     <div id="flash-msg"></div>
-
+    <div class="section-label">▸ ROCK · PAPER · SCISSORS · OFFICER</div>
     <div class="btn-row" id="rps-btns">
       <button class="game-btn btn-rps" id="btn-rock" disabled onclick="sendRPS('rock')">
-        <canvas class="btn-icon" id="icon-rock" width="40" height="40"></canvas>
+        <canvas class="btn-icon" id="icon-rock" width="36" height="36"></canvas>
         <span class="btn-label">🪨 ROCK</span>
       </button>
       <button class="game-btn btn-rps" id="btn-paper" disabled onclick="sendRPS('paper')">
-        <canvas class="btn-icon" id="icon-paper" width="40" height="40"></canvas>
+        <canvas class="btn-icon" id="icon-paper" width="36" height="36"></canvas>
         <span class="btn-label">📄 PAPER</span>
       </button>
+      <button class="game-btn btn-rps" id="btn-scissors" disabled onclick="sendRPS('scissors')">
+        <canvas class="btn-icon" id="icon-scissors" width="36" height="36"></canvas>
+        <span class="btn-label">✂ SCISSORS</span>
+      </button>
       <button class="game-btn btn-rps" id="btn-officer" disabled onclick="sendRPS('officer')">
-        <canvas class="btn-icon" id="icon-officer" width="40" height="40"></canvas>
+        <canvas class="btn-icon" id="icon-officer" width="36" height="36"></canvas>
         <span class="btn-label">🎖 OFFICER</span>
       </button>
     </div>
-
     <div id="target-selector">
       <div id="target-label">🎯 SELECT TARGET:</div>
       <div id="target-btn-row"></div>
     </div>
-
-    <div class="btn-row" id="action-btns">
-      <button class="game-btn btn-action" id="btn-mortar" disabled onclick="pickAction('mortar')">
-        <canvas class="btn-icon" id="icon-cannon" width="40" height="40"></canvas>
-        <span class="btn-label">💣 CANNON</span>
+    <div class="section-label" id="action-label" style="display:none;">▸ CHOOSE ACTION (after winning RPS)</div>
+    <div class="btn-row" id="action-btns" style="display:none;">
+      <button class="game-btn btn-action" id="btn-cannon" disabled onclick="pickAction('cannon',false)">
+        <canvas class="btn-icon" id="icon-cannon" width="36" height="36"></canvas>
+        <span class="btn-label">💣 CANNON<small>Break shield or destroy quadrant</small></span>
       </button>
-      <button class="game-btn btn-action" id="btn-shield" disabled onclick="pickAction('shield')">
-        <canvas class="btn-icon" id="icon-shield" width="40" height="40"></canvas>
-        <span class="btn-label">🛡 SHIELD</span>
+      <button class="game-btn btn-action" id="btn-slicer" disabled onclick="pickAction('slicer',false)">
+        <canvas class="btn-icon" id="icon-slicer" width="36" height="36"></canvas>
+        <span class="btn-label">⚔ SLICER<small>Cut quadrant (shield blocks)</small></span>
       </button>
-      <button class="game-btn btn-action" id="btn-slicer" disabled onclick="pickAction('slicer')">
-        <canvas class="btn-icon" id="icon-slicer" width="40" height="40"></canvas>
-        <span class="btn-label">⚔ SLICER</span>
+      <button class="game-btn btn-action" id="btn-shield" disabled onclick="sendAction('shield',null,false)">
+        <canvas class="btn-icon" id="icon-shield" width="36" height="36"></canvas>
+        <span class="btn-label">🛡 SHIELD<small>Add ring + get item</small></span>
+      </button>
+      <button class="game-btn btn-store" id="btn-store" disabled onclick="sendAction('store',null,false)">
+        <canvas class="btn-icon" id="icon-store" width="36" height="36"></canvas>
+        <span class="btn-label">📦 BANK IT<small>Store cannon+slicer</small></span>
+      </button>
+    </div>
+    <div class="section-label" id="inv-label" style="display:none;">▸ USE FROM INVENTORY</div>
+    <div class="btn-row" id="inv-btns" style="display:none;">
+      <button class="game-btn btn-inv" id="btn-inv-cannon" disabled onclick="pickAction('cannon',true)">
+        <canvas class="btn-icon" id="icon-inv-cannon" width="36" height="36"></canvas>
+        <span class="btn-label">💣 USE CANNON<small id="inv-cannon-count">×0 stored</small></span>
+      </button>
+      <button class="game-btn btn-inv" id="btn-inv-slicer" disabled onclick="pickAction('slicer',true)">
+        <canvas class="btn-icon" id="icon-inv-slicer" width="36" height="36"></canvas>
+        <span class="btn-label">⚔ USE SLICER<small id="inv-slicer-count">×0 stored</small></span>
       </button>
     </div>
   </div>
-
   <div id="log-section">
     <div id="log-title">📜 BATTLE LOG</div>
     <div id="move-log"><p>▓ GAME STARTING...</p></div>
   </div>
 </div>
-
 <div id="gameover-overlay">
   <div id="gameover-title">...</div>
   <div id="gameover-scores"></div>
   <button class="ui-btn btn-yellow-ui" onclick="location.href='/'">↩ PLAY AGAIN</button>
 </div>
-
 <script>
-// ─── Pixel Art Icons ─────────────────────────────────────────────────────────
-function px(ctx,x,y,color,size=4){ctx.fillStyle=color;ctx.fillRect(x*size,y*size,size,size);}
+// ══ Cell colours ═══════════════════════════════════════
+const CELL_COLORS={sea:'#1a6fad',grass:'#5aad3e',dark_grass:'#3a8a28',stone:'#8a9aa0',dirt:'#9a6b3e',sand:'#d4b06a'};
 
-function drawRockIcon(){const c=document.getElementById('icon-rock').getContext('2d');c.clearRect(0,0,40,40);
-  [[0,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0]].forEach((row,r)=>row.forEach((v,cc)=>{if(v)px(c,cc+1,r+1,r===1&&cc===2?'#b0bec5':'#78909c');}));}
-
-function drawPaperIcon(){const c=document.getElementById('icon-paper').getContext('2d');c.clearRect(0,0,40,40);
-  for(let r=0;r<8;r++)for(let cc=1;cc<=7;cc++)px(c,cc,r,'#f5f5dc',4);
-  for(let r=2;r<8;r+=2)for(let cc=2;cc<=6;cc++)px(c,cc,r,'#999',4);}
-
-function drawOfficerIcon(){const c=document.getElementById('icon-officer').getContext('2d');c.clearRect(0,0,40,40);
-  [[0,1,1,0],[1,1,1,1],[1,1,1,1],[0,1,0,0],[1,1,1,1],[0,1,1,0]].forEach((row,r)=>row.forEach((v,cc)=>{
-    if(v)px(c,cc+1,r+1,r===3&&cc===1?'#fff':'#ffd700',4);}));}
-
-function drawCannonIcon(){const c=document.getElementById('icon-cannon').getContext('2d');c.clearRect(0,0,40,40);
-  for(let cc=0;cc<7;cc++)px(c,cc+1,2,'#333',4);
-  for(let cc=0;cc<6;cc++){px(c,cc+1,1,'#555',4);px(c,cc+1,3,'#555',4);}
-  px(c,0,0,'#333',4);}
-
-function drawShieldIcon(){const c=document.getElementById('icon-shield').getContext('2d');c.clearRect(0,0,40,40);
-  [[0,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]].forEach((row,r)=>row.forEach((v,cc)=>{
-    if(v)px(c,cc+1,r+1,(r===1&&cc===2)?'#00aaff':'#0055aa',4);}));}
-
-function drawSlicerIcon(){const c=document.getElementById('icon-slicer').getContext('2d');c.clearRect(0,0,40,40);
-  for(let i=0;i<6;i++){px(c,6-i,i,'#aaccff',4);if(i>0)px(c,7-i,i,'#ddeeff',4);}
-  for(let r=5;r<=8;r++)px(c,2,r,'#8b4513',4);}
-
+// ══ Pixel-art icon drawing ══════════════════════════════
+function px(ctx,x,y,col,s=4){ctx.fillStyle=col;ctx.fillRect(x*s,y*s,s,s);}
+function drawRock(){const c=document.getElementById('icon-rock').getContext('2d');c.clearRect(0,0,36,36);
+  [[0,0,1,1,1,0],[0,1,1,2,1,1],[1,1,1,1,1,1],[0,1,1,1,1,0]].forEach((row,r)=>row.forEach((v,cc)=>{if(v===1)px(c,cc,r,'#78909c',5);if(v===2)px(c,cc,r,'#b0bec5',5);}));}
+function drawPaper(){const c=document.getElementById('icon-paper').getContext('2d');c.clearRect(0,0,36,36);
+  for(let r=0;r<7;r++)for(let cc=1;cc<=6;cc++)px(c,cc,r,'#f5f5dc',5);
+  for(let r=2;r<7;r+=2)for(let cc=2;cc<=5;cc++)px(c,cc,r,'#aaa',5);}
+function drawScissors(){const c=document.getElementById('icon-scissors').getContext('2d');c.clearRect(0,0,36,36);
+  for(let i=0;i<5;i++){px(c,i,i,'#ccc',5);px(c,6-i,i,'#ccc',5);}
+  for(let i=3;i<7;i++){px(c,i-2,i,'#999',5);px(c,8-i,i,'#999',5);}
+  px(c,3,2,'#e53935',4);}
+function drawOfficer(){const c=document.getElementById('icon-officer').getContext('2d');c.clearRect(0,0,36,36);
+  [[0,1,1,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,2,1,0],[1,1,1,1,1],[0,1,1,1,0]]
+  .forEach((row,r)=>row.forEach((v,cc)=>{if(v===1)px(c,cc,r,'#ffd700',5);if(v===2)px(c,cc,r,'#fff',5);}));}
+function drawCannon(id){const c=document.getElementById(id).getContext('2d');c.clearRect(0,0,36,36);
+  for(let cc=0;cc<7;cc++)px(c,cc,2,'#222',5);
+  for(let cc=0;cc<6;cc++){px(c,cc,1,'#444',5);px(c,cc,3,'#444',5);}
+  px(c,1,4,'#555',5);px(c,3,4,'#555',5);px(c,7,2,'#ffc107',5);}
+function drawShield(id){const c=document.getElementById(id).getContext('2d');c.clearRect(0,0,36,36);
+  [[0,1,1,1,0],[1,1,1,1,1],[1,1,2,1,1],[1,1,2,1,1],[0,1,1,1,0],[0,0,1,0,0]]
+  .forEach((row,r)=>row.forEach((v,cc)=>{if(v===1)px(c,cc,r,'#0055cc',5);if(v===2)px(c,cc,r,'#44aaff',5);}));}
+function drawSlicer(id){const c=document.getElementById(id).getContext('2d');c.clearRect(0,0,36,36);
+  for(let i=0;i<6;i++){px(c,6-i,i,'#c8e0ff',5);if(i>0)px(c,7-i,i,'#e8f4ff',5);}
+  for(let r=5;r<=8;r++)px(c,2,r,'#8b4513',5);}
+function drawStore(){const c=document.getElementById('icon-store').getContext('2d');c.clearRect(0,0,36,36);
+  for(let r=2;r<7;r++)for(let cc=1;cc<=6;cc++)px(c,cc,r,'#8b6914',5);
+  for(let cc=1;cc<=6;cc++)px(c,cc,2,'#ffd700',5);
+  for(let r=0;r<2;r++)px(c,3,r,'#fff',5);px(c,2,1,'#fff',5);px(c,4,1,'#fff',5);}
 window.addEventListener('load',()=>{
-  drawRockIcon();drawPaperIcon();drawOfficerIcon();drawCannonIcon();drawShieldIcon();drawSlicerIcon();
+  drawRock();drawPaper();drawScissors();drawOfficer();
+  drawCannon('icon-cannon');drawCannon('icon-inv-cannon');
+  drawShield('icon-shield');
+  drawSlicer('icon-slicer');drawSlicer('icon-inv-slicer');
+  drawStore();
 });
 
-// ─── Cell Colors ─────────────────────────────────────────────────────────────
-const CELL_COLORS={sky:'#5c94fc',cloud:'#e8f4f8',dirt:'#a0522d',grass:'#4caf50',
-  dark_grass:'#2e7d32',stone:'#78909c'};
+// ══ Island canvas rendering ═════════════════════════════
+const CW=12,CH=12,GW=20,GH=10,CVW=240,CVH=120;
 
-// ─── URL params ──────────────────────────────────────────────────────────────
+function renderIslandCanvas(canvas,grid,shields){
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,CVW,CVH);
+  // Draw ocean background first
+  ctx.fillStyle=CELL_COLORS.sea;
+  ctx.fillRect(0,0,CVW,CVH);
+  // Draw cells
+  grid.forEach((row,r)=>row.forEach((cell,c)=>{
+    ctx.fillStyle=CELL_COLORS[cell]||CELL_COLORS.sea;
+    ctx.fillRect(c*CW,r*CH,CW,CH);
+  }));
+  // Subtle wave lines on sea cells
+  grid.forEach((row,r)=>row.forEach((cell,c)=>{
+    if(cell==='sea'){ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(c*CW,r*CH+4,CW,1);}
+  }));
+  // Faint quadrant dividers
+  ctx.strokeStyle='rgba(0,0,0,0.15)';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+  ctx.beginPath();ctx.moveTo(CVW/2,0);ctx.lineTo(CVW/2,CVH);ctx.moveTo(0,CVH/2);ctx.lineTo(CVW,CVH/2);ctx.stroke();
+  ctx.setLineDash([]);
+  // Quadrant labels (faint)
+  ctx.fillStyle='rgba(255,255,255,0.12)';ctx.font='7px monospace';
+  ctx.fillText('1',4,11);ctx.fillText('2',CVW/2+4,11);
+  ctx.fillText('3',4,CVH/2+11);ctx.fillText('4',CVW/2+4,CVH/2+11);
+  // Shield rings — glow inside border
+  if(shields>0){
+    const shCols=['rgba(0,160,255,0.9)','rgba(0,220,255,0.7)','rgba(160,240,255,0.55)'];
+    ctx.shadowBlur=12;
+    for(let s=0;s<shields;s++){
+      const inset=(shields-s)*4;
+      ctx.strokeStyle=shCols[s];ctx.lineWidth=3;ctx.shadowColor=shCols[s];
+      ctx.strokeRect(inset+1,inset+1,CVW-inset*2-2,CVH-inset*2-2);
+    }
+    ctx.shadowBlur=0;
+  }
+}
+
+// ══ Setup ═══════════════════════════════════════════════
 const params=new URLSearchParams(location.search);
-const GAME_ID=params.get('gameId'), MY_NAME=params.get('username');
-if(!GAME_ID||!MY_NAME) location.href='/';
-
+const GAME_ID=params.get('gameId'),MY_NAME=params.get('username');
+if(!GAME_ID||!MY_NAME)location.href='/';
 const API='/api/game';
-let gameState=null, myRPSSubmitted=false, pendingAction=null, pollInterval=null, gameOver=false;
+let gameState=null,myRPSSubmitted=false,pendingAction=null,pollInterval=null,gameOver=false,failCount=0;
 
-// ─── API helpers ─────────────────────────────────────────────────────────────
-async function post(action, body) {
-  const r = await fetch(`${API}?action=${action}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+async function post(action,body){
+  const r=await fetch(`${API}?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   return r.json();
 }
+async function getState(){return(await fetch(`${API}?action=game&gameId=${GAME_ID}`)).json();}
 
-async function getState() {
-  const r = await fetch(`${API}?action=game&gameId=${GAME_ID}`);
-  return r.json();
-}
-
-// ─── Grid render ─────────────────────────────────────────────────────────────
-function renderGrid(gridData,containerId){
-  const c=document.getElementById(containerId);
-  if(!c)return;
-  c.innerHTML='';
-  gridData.flat().forEach(t=>{
-    const d=document.createElement('div');
-    d.className='grid-cell';
-    d.style.backgroundColor=CELL_COLORS[t]||'#5c94fc';
-    c.appendChild(d);
-  });
-}
-
-// ─── Render all islands ──────────────────────────────────────────────────────
+// ══ Render islands ══════════════════════════════════════
 function renderIslands(state){
   const row=document.getElementById('islands-row');
   state.players.forEach(u=>{
-    let panel=document.getElementById('panel-'+u);
     const isAlive=state.islands[u]&&state.islands[u].alive!==false;
     const isMe=u===MY_NAME;
-
+    const inv=state.islands[u]?.inventory||{cannons:0,slicers:0};
+    let panel=document.getElementById('panel-'+u);
     if(!panel){
       panel=document.createElement('div');
-      panel.className='island-panel';
-      panel.id='panel-'+u;
-      panel.innerHTML=`
-        <div class="island-name-tag" id="nametag-${u}">${u}</div>
-        <div class="grid-wrapper">
-          <div class="island-grid" id="grid-${u}" style="grid-template-columns:repeat(20,12px);grid-template-rows:repeat(10,12px);"></div>
-          <div class="shield-overlay" id="shield-${u}"></div>
-        </div>
-        <div class="island-stats" id="stats-${u}">...</div>`;
+      panel.className='island-panel';panel.id='panel-'+u;
+      panel.innerHTML=`<div class="island-name-tag" id="nametag-${u}">${u}</div>
+        <canvas class="island-canvas" id="canvas-${u}" width="${CVW}" height="${CVH}"></canvas>
+        <div class="island-stats" id="stats-${u}">...</div>
+        <div class="inv-badge" id="inv-${u}" style="display:none">📦 💣×0 ⚔×0</div>`;
       row.appendChild(panel);
     }
-
-    if(!isAlive) panel.classList.add('eliminated');
-    else panel.classList.remove('eliminated');
-
+    if(!isAlive)panel.classList.add('eliminated');else panel.classList.remove('eliminated');
     const tag=document.getElementById('nametag-'+u);
-    if(tag) tag.className='island-name-tag'+(isMe?' my-tag':'');
-
-    if(state.grids[u]) renderGrid(state.grids[u],'grid-'+u);
-
-    const shieldEl=document.getElementById('shield-'+u);
-    if(shieldEl) shieldEl.className='shield-overlay'+(state.islands[u]&&state.islands[u].shields>0?' active':'');
-
+    if(tag)tag.className='island-name-tag'+(isMe?' my-tag':'');
+    const canvas=document.getElementById('canvas-'+u);
+    if(canvas&&state.grids[u])renderIslandCanvas(canvas,state.grids[u],state.islands[u]?.shields||0);
     const statsEl=document.getElementById('stats-'+u);
     if(statsEl&&state.islands[u]){
-      if(!isAlive){
-        statsEl.innerHTML='<span class="elim-badge">💀 ELIMINATED</span>';
-      } else {
-        statsEl.innerHTML=`❤ ${state.islands[u].parts} &nbsp; 🛡 ${state.islands[u].shields} &nbsp; 🏆 ${state.scores[u]}`;
-      }
+      if(!isAlive){statsEl.innerHTML='<span class="elim-badge">💀 ELIMINATED</span>';}
+      else{const parts=4-(state.islands[u].quadrants?.length||0);const sh=state.islands[u].shields||0;
+        statsEl.innerHTML=`❤ ${parts}/4 &nbsp;🛡 ${sh}/3 &nbsp;🏆 ${state.scores[u]}`;}
     }
+    const invEl=document.getElementById('inv-'+u);
+    if(invEl){invEl.style.display=isMe?'block':'none';invEl.textContent=`📦 💣×${inv.cannons} ⚔×${inv.slicers}`;}
   });
 }
 
-// ─── Update UI ───────────────────────────────────────────────────────────────
+// ══ Update UI ═══════════════════════════════════════════
 function updateUI(state){
-  gameState=state;
-  renderIslands(state);
-
-  const bR=document.getElementById('btn-rock'),
-        bP=document.getElementById('btn-paper'),
-        bO=document.getElementById('btn-officer'),
-        bM=document.getElementById('btn-mortar'),
-        bS=document.getElementById('btn-shield'),
-        bSl=document.getElementById('btn-slicer'),
-        pt=document.getElementById('phase-text'),
-        rpsWait=document.getElementById('rps-waiting-row');
-
-  [bR,bP,bO,bM,bS,bSl].forEach(b=>b.disabled=true);
+  gameState=state;renderIslands(state);
+  const ids=['btn-rock','btn-paper','btn-scissors','btn-officer','btn-cannon','btn-slicer','btn-shield','btn-store','btn-inv-cannon','btn-inv-slicer'];
+  ids.forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
   document.getElementById('target-selector').classList.remove('visible');
+  document.getElementById('action-label').style.display='none';
+  document.getElementById('action-btns').style.display='none';
+  document.getElementById('inv-label').style.display='none';
+  document.getElementById('inv-btns').style.display='none';
   pendingAction=null;
-
-  if(state.phase==='rps'&&state.alivePlayers&&state.alivePlayers.length>0){
-    rpsWait.innerHTML=state.alivePlayers.map(p=>
-      `<span class="rps-pip ${state.pendingRPS[p]?'done':''}">${p}${state.pendingRPS[p]?' ✓':' ...'}</span>`
-    ).join('');
-  } else {
-    rpsWait.innerHTML='';
-  }
-
-  const myAlive=state.alivePlayers&&state.alivePlayers.includes(MY_NAME);
-
-  if(!myAlive&&!state.gameOver){
-    pt.textContent='💀 YOU HAVE BEEN ELIMINATED — WATCHING...';
-    pt.className='text-red';
-    return;
-  }
-
+  const pt=document.getElementById('phase-text');
+  const rpsWait=document.getElementById('rps-waiting-row');
+  if(state.phase==='rps'&&state.alivePlayers?.length>0){
+    rpsWait.innerHTML=state.alivePlayers.map(p=>`<span class="rps-pip ${state.pendingRPS[p]?'done':''}">${p}${state.pendingRPS[p]?' ✓':' ...'}</span>`).join('');
+  }else{rpsWait.innerHTML='';}
+  const myAlive=state.alivePlayers?.includes(MY_NAME);
+  if(!myAlive&&!state.gameOver){pt.textContent='💀 ELIMINATED — SPECTATING...';pt.className='text-red';return;}
   if(state.phase==='rps'){
-    if(!myAlive){
-      pt.textContent='💀 ELIMINATED — WATCHING RPS...';
-      pt.className='text-red';
-    } else if(state.pendingRPS[MY_NAME]||myRPSSubmitted){
-      pt.textContent='⏳ WAITING FOR OTHER PLAYERS...';
-      pt.className='text-yellow';
-    } else {
-      pt.textContent='⚔ YOUR TURN — PICK RPS!';
-      pt.className='text-green';
-      bR.disabled=bP.disabled=bO.disabled=false;
-    }
-  } else if(state.phase==='action'){
+    if(!myAlive){pt.textContent='👀 WATCHING RPS...';pt.className='text-red';}
+    else if(state.pendingRPS[MY_NAME]||myRPSSubmitted){pt.textContent='⏳ WAITING FOR OTHERS...';pt.className='text-yellow';}
+    else{pt.textContent='⚔ YOUR TURN — PICK RPS!';pt.className='text-green';
+      ['btn-rock','btn-paper','btn-scissors','btn-officer'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});}
+    if(!state.pendingRPS[MY_NAME])myRPSSubmitted=false;
+  }else if(state.phase==='action'){
     if(state.rpsWinner===MY_NAME){
-      pt.textContent='✨ YOU WON RPS — CHOOSE ACTION!';
-      pt.className='text-cyan';
-      bM.disabled=bS.disabled=bSl.disabled=false;
-    } else {
-      pt.textContent=`⏳ ${state.rpsWinner||'?'} IS CHOOSING ACTION...`;
-      pt.className='text-yellow';
-    }
+      pt.textContent='✨ RPS WIN — CHOOSE ACTION!';pt.className='text-cyan';
+      document.getElementById('action-label').style.display='block';
+      document.getElementById('action-btns').style.display='flex';
+      ['btn-cannon','btn-slicer','btn-shield','btn-store'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});
+      const myInv=state.islands[MY_NAME]?.inventory||{cannons:0,slicers:0};
+      document.getElementById('inv-cannon-count').textContent=`×${myInv.cannons} stored`;
+      document.getElementById('inv-slicer-count').textContent=`×${myInv.slicers} stored`;
+      if(myInv.cannons>0||myInv.slicers>0){
+        document.getElementById('inv-label').style.display='block';
+        document.getElementById('inv-btns').style.display='flex';
+        if(myInv.cannons>0){const b=document.getElementById('btn-inv-cannon');if(b)b.disabled=false;}
+        if(myInv.slicers>0){const b=document.getElementById('btn-inv-slicer');if(b)b.disabled=false;}
+      }
+    }else{pt.textContent=`⏳ ${state.rpsWinner||'?'} IS CHOOSING...`;pt.className='text-yellow';}
   }
-
-  if(state.phase==='rps'&&!state.pendingRPS[MY_NAME]){
-    myRPSSubmitted=false;
-    if(myAlive){
-      bR.disabled=bP.disabled=bO.disabled=false;
-      pt.textContent='⚔ YOUR TURN — PICK RPS!';
-      pt.className='text-green';
-    }
-  }
-
-  if(state.moves&&state.moves.length>0)
-    document.getElementById('move-log').innerHTML=state.moves.map(m=>`<p>> ${m}</p>`).join('');
+  if(state.moves?.length>0)document.getElementById('move-log').innerHTML=state.moves.map(m=>`<p>> ${m}</p>`).join('');
 }
 
-// ─── Flash ───────────────────────────────────────────────────────────────────
-function flash(msg){
-  const el=document.getElementById('flash-msg');
-  el.textContent=msg;
-  setTimeout(()=>{el.textContent='';},2500);
-}
+function flash(msg){const el=document.getElementById('flash-msg');el.textContent=msg;setTimeout(()=>{el.textContent='';},2800);}
 
-// ─── Game Over ───────────────────────────────────────────────────────────────
 function showGameOver(winner,state){
-  if(gameOver) return;
-  gameOver=true;
-  stopPolling();
-  const overlay=document.getElementById('gameover-overlay');
-  const title=document.getElementById('gameover-title');
-  const scores=document.getElementById('gameover-scores');
-  if(winner===MY_NAME){
-    title.innerHTML='<span class="win-text">🏆 YOU WIN!</span>';
-  } else {
-    title.innerHTML=`<span class="lose-text">${winner} WINS!</span>`;
-  }
-  scores.innerHTML=state.players
-    .sort((a,b)=>state.scores[b]-state.scores[a])
-    .map((p,i)=>`<span>${i+1}. ${p}: ${state.scores[p]} pts${p===winner?' 👑':''}</span>`)
-    .join('');
-  overlay.classList.add('visible');
+  if(gameOver)return;gameOver=true;stopPolling();
+  document.getElementById('gameover-title').innerHTML=winner===MY_NAME?'<span class="win-text">🏆 YOU WIN!</span>':`<span class="lose-text">${winner} WINS!</span>`;
+  document.getElementById('gameover-scores').innerHTML=state.players.sort((a,b)=>state.scores[b]-state.scores[a]).map((p,i)=>`<span>${i+1}. ${p}: ${state.scores[p]} pts${p===winner?' 👑':''}</span>`).join('');
+  document.getElementById('gameover-overlay').classList.add('visible');
 }
 
-// ─── RPS ─────────────────────────────────────────────────────────────────────
+// ══ RPS ════════════════════════════════════════════════
 async function sendRPS(choice){
   myRPSSubmitted=true;
-  ['btn-rock','btn-paper','btn-officer'].forEach(id=>document.getElementById(id).disabled=true);
-  document.getElementById('phase-text').textContent='⏳ WAITING FOR OTHER PLAYERS...';
+  ['btn-rock','btn-paper','btn-scissors','btn-officer'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
+  document.getElementById('phase-text').textContent='⏳ WAITING FOR OTHERS...';
   document.getElementById('phase-text').className='text-yellow';
-  const data = await post('rps_choice',{gameId:GAME_ID,username:MY_NAME,choice});
-  if(data.error) { flash(data.error); myRPSSubmitted=false; return; }
-  if(data.state) updateUI(data.state);
+  const data=await post('rps_choice',{gameId:GAME_ID,username:MY_NAME,choice});
+  if(data.error){flash(data.error);myRPSSubmitted=false;return;}
+  if(data.state)updateUI(data.state);
 }
 
-// ─── Action ──────────────────────────────────────────────────────────────────
-function pickAction(action){
-  if(!gameState) return;
-  const opponents=gameState.alivePlayers.filter(p=>p!==MY_NAME);
-  if(action==='shield'){ sendAction(action,null); return; }
-  if(opponents.length===1){ sendAction(action,opponents[0]); return; }
-  pendingAction=action;
+// ══ Actions ════════════════════════════════════════════
+function pickAction(act,fromInv){
+  if(!gameState)return;
+  const opps=gameState.alivePlayers.filter(p=>p!==MY_NAME);
+  if(opps.length===1){sendAction(act,opps[0],fromInv);return;}
+  pendingAction=act;
   document.getElementById('target-selector').classList.add('visible');
-  document.getElementById('target-label').textContent=
-    action==='mortar'?'🎯 PICK CANNON TARGET:':'⚔ PICK SLICER TARGET:';
-  const btnRow=document.getElementById('target-btn-row');
-  btnRow.innerHTML=opponents.map(opp=>
-    `<button class="target-btn" onclick="sendAction('${action}','${opp}')">${opp}</button>`
-  ).join('');
+  document.getElementById('target-label').textContent=act==='cannon'?'🎯 CANNON TARGET:':'⚔ SLICER TARGET:';
+  document.getElementById('target-btn-row').innerHTML=opps.map(opp=>`<button class="target-btn" onclick="sendAction('${act}','${opp}',${fromInv})">${opp}</button>`).join('');
 }
 
-async function sendAction(action,target){
+async function sendAction(act,target,fromInv){
   document.getElementById('target-selector').classList.remove('visible');
-  ['btn-mortar','btn-shield','btn-slicer'].forEach(id=>document.getElementById(id).disabled=true);
-  const payload={gameId:GAME_ID,username:MY_NAME,action};
-  if(target) payload.targetPlayer=target;
-  const data = await post('action_choice', payload);
-  if(data.error) { flash(data.error); return; }
-  if(data.flash) flash(data.flash);
-  if(data.state) updateUI(data.state);
-  if(data.gameOver) showGameOver(data.winner, data.state);
+  ['btn-cannon','btn-slicer','btn-shield','btn-store','btn-inv-cannon','btn-inv-slicer'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
+  const payload={gameId:GAME_ID,username:MY_NAME,action:act};
+  if(target)payload.targetPlayer=target;
+  if(fromInv)payload.useInventory=true;
+  const data=await post('action_choice',payload);
+  if(data.error){flash(data.error);if(gameState)updateUI(gameState);return;}
+  if(data.flash)flash(data.flash);
+  if(data.state)updateUI(data.state);
+  if(data.gameOver)showGameOver(data.winner,data.state);
 }
 
-// ─── Polling ─────────────────────────────────────────────────────────────────
-function stopPolling(){ if(pollInterval){ clearInterval(pollInterval); pollInterval=null; } }
-
-let lastMoveCount = 0;
-
+// ══ Polling ════════════════════════════════════════════
+function stopPolling(){if(pollInterval){clearInterval(pollInterval);pollInterval=null;}}
+let lastHash='';
 async function poll(){
-  try {
-    const data = await getState();
-    if(data.error) return;
-    const state = data.state;
-    // Only re-render if something changed
-    const moveCount = state.moves ? state.moves.length : 0;
-    const stateChanged = moveCount !== lastMoveCount ||
-      JSON.stringify(state.pendingRPS) !== JSON.stringify(gameState?.pendingRPS) ||
-      state.phase !== gameState?.phase;
-
-    if(stateChanged || !gameState) {
-      lastMoveCount = moveCount;
-      updateUI(state);
-    }
-
-    if(state.gameOver && !gameOver) showGameOver(state.winner, state);
-  } catch(e) { /* ignore */ }
-}
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
-async function init(){
-  const bar = document.getElementById('conn-bar');
-  try {
-    const data = await getState();
-    if(data.error){ bar.textContent='❌ GAME NOT FOUND'; bar.className='err'; return; }
-    bar.innerHTML='⚡ CONNECTED — BATTLE STARTED!';
-    bar.className='ok';
-    updateUI(data.state);
-    if(data.state.gameOver){ showGameOver(data.state.winner, data.state); return; }
-    // Poll every 1.5s for state changes
-    pollInterval = setInterval(poll, 1500);
-  } catch(e) {
-    bar.textContent='❌ FAILED TO LOAD — REFRESH';
-    bar.className='err';
+  try{
+    const data=await getState();
+    if(data.error){failCount++;return;}
+    failCount=0;
+    const state=data.state;
+    const hash=state.phase+(state.moves?.length||0)+JSON.stringify(state.pendingRPS)+JSON.stringify(state.islands);
+    if(hash!==lastHash||!gameState){lastHash=hash;updateUI(state);}
+    if(state.gameOver&&!gameOver)showGameOver(state.winner,state);
+    document.getElementById('conn-bar').textContent='⚡ LIVE';
+    document.getElementById('conn-bar').className='ok';
+  }catch(e){
+    failCount++;
+    if(failCount>=3){document.getElementById('conn-bar').innerHTML='<span class="spinner"></span>RECONNECTING...';document.getElementById('conn-bar').className='';}
+    if(failCount>=40){document.getElementById('conn-bar').textContent='❌ CONNECTION LOST — REFRESH';document.getElementById('conn-bar').className='err';stopPolling();}
   }
 }
 
+async function init(){
+  const bar=document.getElementById('conn-bar');
+  try{
+    const data=await getState();
+    if(data.error){bar.textContent='❌ GAME NOT FOUND';bar.className='err';return;}
+    bar.textContent='⚡ LIVE';bar.className='ok';
+    updateUI(data.state);
+    if(data.state.gameOver){showGameOver(data.state.winner,data.state);return;}
+    pollInterval=setInterval(poll,1500);
+  }catch(e){bar.textContent='❌ FAILED TO LOAD — REFRESH';bar.className='err';}
+}
 init();
 </script>
 </body>
