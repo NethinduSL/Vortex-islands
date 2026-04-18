@@ -7,389 +7,176 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
 :root{
-  --sky:#3a8efc;
-  --sky2:#1a5fd4;
-  --gold:#ffd700;
-  --green:#39ff14;
-  --red:#e53935;
-  --cyan:#00c8ff;
-  --dark:#0d0d0d;
-  --card:#141414;
+  --sky:#3a8efc;--sky2:#1a5fd4;--gold:#ffd700;--green:#39ff14;
+  --red:#e53935;--cyan:#00c8ff;--dark:#0d0d0d;--card:#141414;
   --border:4px solid var(--gold);
 }
-
-html,body{
-  min-height:100%;
-  width:100%;
-  overflow-x:hidden;
-}
-
+html,body{min-height:100%;width:100%;overflow-x:hidden;}
 body{
-  background: var(--sky);
+  background:var(--sky);
   background-image:
-    /* sun glow */
-    radial-gradient(circle 180px at 85% 12%, rgba(255,235,100,0.35) 0%, transparent 70%),
-    /* clouds */
-    radial-gradient(ellipse 140px 55px at 12% 18%, #fff 0%, #f0f8ff 55%, transparent 72%),
-    radial-gradient(ellipse 90px 38px at 22% 24%, #fff 0%, transparent 70%),
-    radial-gradient(ellipse 120px 48px at 55% 10%, #fff 0%, #eaf4ff 50%, transparent 68%),
-    radial-gradient(ellipse 70px 28px at 65% 16%, #fff 0%, transparent 65%),
-    radial-gradient(ellipse 100px 40px at 90% 28%, #fff 0%, #edf7ff 55%, transparent 70%),
-    /* sky gradient */
-    linear-gradient(180deg, #1a5fd4 0%, #3a8efc 45%, #6abaff 100%);
+    radial-gradient(circle 180px at 85% 12%,rgba(255,235,100,0.35) 0%,transparent 70%),
+    radial-gradient(ellipse 140px 55px at 12% 18%,#fff 0%,#f0f8ff 55%,transparent 72%),
+    radial-gradient(ellipse 90px 38px at 22% 24%,#fff 0%,transparent 70%),
+    radial-gradient(ellipse 120px 48px at 55% 10%,#fff 0%,#eaf4ff 50%,transparent 68%),
+    radial-gradient(ellipse 70px 28px at 65% 16%,#fff 0%,transparent 65%),
+    radial-gradient(ellipse 100px 40px at 90% 28%,#fff 0%,#edf7ff 55%,transparent 70%),
+    linear-gradient(180deg,#1a5fd4 0%,#3a8efc 45%,#6abaff 100%);
   font-family:'Press Start 2P',monospace;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding: clamp(16px,4vw,36px) clamp(10px,3vw,20px) 80px;
-  color:#1a1a1a;
-  position:relative;
+  display:flex;flex-direction:column;align-items:center;
+  padding:clamp(16px,4vw,36px) clamp(10px,3vw,20px) 80px;
+  color:#1a1a1a;position:relative;
 }
-
-/* === GROUND === */
 body::after{
-  content:'';
-  position:fixed;
-  bottom:0; left:0; right:0;
-  height: clamp(30px,5vh,48px);
-  background:
-    repeating-linear-gradient(90deg,
-      #4caf50 0px, #4caf50 18px,
-      #388e3c 18px, #388e3c 36px,
-      #43a047 36px, #43a047 54px);
-  border-top: 4px solid #2e7d32;
-  box-shadow: 0 -4px 0 #1b5e20;
-  z-index:0;
+  content:'';position:fixed;bottom:0;left:0;right:0;
+  height:clamp(30px,5vh,48px);
+  background:repeating-linear-gradient(90deg,#4caf50 0px,#4caf50 18px,#388e3c 18px,#388e3c 36px,#43a047 36px,#43a047 54px);
+  border-top:4px solid #2e7d32;box-shadow:0 -4px 0 #1b5e20;z-index:0;
 }
-
-/* === TITLE === */
-.title-wrap{
-  position:relative;
-  z-index:1;
-  text-align:center;
-  margin-bottom: clamp(12px,3vh,22px);
-}
-
-.coin-row{
-  display:flex;gap:clamp(6px,2vw,12px);justify-content:center;
-  margin-bottom: clamp(8px,2vh,14px);
-  z-index:1;position:relative;
-}
-
+.title-wrap{position:relative;z-index:1;text-align:center;margin-bottom:clamp(12px,3vh,22px);}
+.coin-row{display:flex;gap:clamp(6px,2vw,12px);justify-content:center;margin-bottom:clamp(8px,2vh,14px);z-index:1;position:relative;}
 .coin{
-  width: clamp(16px,4vw,24px);
-  height: clamp(16px,4vw,24px);
-  background: radial-gradient(circle at 35% 35%, #ffe680, #ffd700 50%, #c8a800);
-  box-shadow: 2px 2px 0 #8b6914, inset -2px -2px 0 rgba(0,0,0,0.2);
-  border-radius:50%;
-  animation:bob .9s ease-in-out infinite alternate;
+  width:clamp(16px,4vw,24px);height:clamp(16px,4vw,24px);
+  background:radial-gradient(circle at 35% 35%,#ffe680,#ffd700 50%,#c8a800);
+  box-shadow:2px 2px 0 #8b6914,inset -2px -2px 0 rgba(0,0,0,0.2);
+  border-radius:50%;animation:bob .9s ease-in-out infinite alternate;
 }
-.coin:nth-child(2){animation-delay:.18s}
-.coin:nth-child(3){animation-delay:.36s}
-.coin:nth-child(4){animation-delay:.54s}
-.coin:nth-child(5){animation-delay:.72s}
+.coin:nth-child(2){animation-delay:.18s}.coin:nth-child(3){animation-delay:.36s}
+.coin:nth-child(4){animation-delay:.54s}.coin:nth-child(5){animation-delay:.72s}
 @keyframes bob{to{transform:translateY(-5px)}}
-
 h1{
-  font-size: clamp(16px, 5.5vw, 30px);
-  color:#fff;
-  text-shadow:
-    3px 3px 0 #7a3a10,
-    -2px -2px 0 #7a3a10,
-    2px -2px 0 #7a3a10,
-    -2px 2px 0 #7a3a10,
-    0 0 30px rgba(255,215,0,0.5);
-  letter-spacing: clamp(2px,1vw,5px);
-  margin-bottom: 6px;
+  font-size:clamp(16px,5.5vw,30px);color:#fff;
+  text-shadow:3px 3px 0 #7a3a10,-2px -2px 0 #7a3a10,2px -2px 0 #7a3a10,-2px 2px 0 #7a3a10,0 0 30px rgba(255,215,0,0.5);
+  letter-spacing:clamp(2px,1vw,5px);margin-bottom:6px;
 }
-
-.subtitle{
-  font-size: clamp(5px,1.5vw,8px);
-  color:#ffd700;
-  text-shadow:2px 2px 0 #7a3a10;
-  letter-spacing:3px;
-}
-
-/* === STATUS === */
+.subtitle{font-size:clamp(5px,1.5vw,8px);color:#ffd700;text-shadow:2px 2px 0 #7a3a10;letter-spacing:3px;}
 #status-bar{
-  font-size: clamp(6px,1.8vw,8px);
-  color:var(--green);
-  margin-bottom:8px;
-  min-height:18px;
-  z-index:1;
-  position:relative;
-  text-shadow:0 0 8px var(--green);
-  letter-spacing:1px;
+  font-size:clamp(6px,1.8vw,8px);color:var(--green);margin-bottom:8px;
+  min-height:18px;z-index:1;position:relative;
+  text-shadow:0 0 8px var(--green);letter-spacing:1px;
 }
 #status-bar.err{color:#ff1744;text-shadow:0 0 8px #ff1744;}
-
-/* === CARDS === */
 .card{
-  background: var(--card);
-  border: 3px solid var(--gold);
-  box-shadow:
-    5px 5px 0 #000,
-    9px 9px 0 #7a5a00,
-    0 0 20px rgba(255,215,0,0.08);
-  padding: clamp(14px,3vw,22px);
-  width:100%;
-  max-width: min(480px, calc(100vw - 20px));
-  margin-bottom: 12px;
-  position:relative;
-  z-index:1;
+  background:var(--card);border:3px solid var(--gold);
+  box-shadow:5px 5px 0 #000,9px 9px 0 #7a5a00,0 0 20px rgba(255,215,0,0.08);
+  padding:clamp(14px,3vw,22px);width:100%;
+  max-width:min(480px,calc(100vw - 20px));margin-bottom:12px;
+  position:relative;z-index:1;
 }
-
-.card::before{
-  content:'';
-  position:absolute;
-  inset:3px;
-  border:1px solid rgba(255,215,0,0.08);
-  pointer-events:none;
-}
-
-.card-title{
-  font-size: clamp(7px,2vw,10px);
-  color:var(--gold);
-  margin-bottom: 14px;
-  letter-spacing:2px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-/* === INPUTS === */
+.card::before{content:'';position:absolute;inset:3px;border:1px solid rgba(255,215,0,0.08);pointer-events:none;}
+.card-title{font-size:clamp(7px,2vw,10px);color:var(--gold);margin-bottom:14px;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
 input[type="text"],input[type="number"]{
-  background:#080808;
-  border:3px solid var(--gold);
-  color:#fff;
-  font-family:'Press Start 2P',monospace;
-  font-size: clamp(8px,2.2vw,10px);
-  padding: clamp(10px,2.5vw,13px);
-  width:100%;
-  outline:none;
-  margin-bottom:10px;
-  transition:border-color .15s, box-shadow .15s;
+  background:#080808;border:3px solid var(--gold);color:#fff;
+  font-family:'Press Start 2P',monospace;font-size:clamp(8px,2.2vw,10px);
+  padding:clamp(10px,2.5vw,13px);width:100%;outline:none;margin-bottom:10px;
+  transition:border-color .15s,box-shadow .15s;
 }
-input:focus{
-  border-color:var(--green);
-  box-shadow:0 0 12px rgba(57,255,20,0.2);
-}
+input:focus{border-color:var(--green);box-shadow:0 0 12px rgba(57,255,20,0.2);}
 input::placeholder{color:#444;}
-
 select{
-  background:#080808;
-  border:3px solid var(--gold);
-  color:var(--gold);
-  font-family:'Press Start 2P',monospace;
-  font-size: clamp(8px,2.2vw,10px);
-  padding: clamp(10px,2.5vw,13px);
-  width:100%;
-  outline:none;
-  margin-bottom:12px;
-  cursor:pointer;
-  appearance:none;
-  -webkit-appearance:none;
+  background:#080808;border:3px solid var(--gold);color:var(--gold);
+  font-family:'Press Start 2P',monospace;font-size:clamp(8px,2.2vw,10px);
+  padding:clamp(10px,2.5vw,13px);width:100%;outline:none;margin-bottom:12px;
+  cursor:pointer;appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%23ffd700'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position: right 12px center;
-  padding-right:32px;
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
 }
 select:focus{border-color:var(--green);}
-
-/* === BUTTONS === */
 button{
-  font-family:'Press Start 2P',monospace;
-  font-size: clamp(7px,2vw,9px);
-  cursor:pointer;
-  border:none;
-  padding: clamp(10px,2.5vw,13px) clamp(12px,3vw,18px);
-  box-shadow:4px 4px 0 #000;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  transition:transform .06s,box-shadow .06s;
-  position:relative;
-  overflow:hidden;
+  font-family:'Press Start 2P',monospace;font-size:clamp(7px,2vw,9px);cursor:pointer;
+  border:none;padding:clamp(10px,2.5vw,13px) clamp(12px,3vw,18px);
+  box-shadow:4px 4px 0 #000;text-transform:uppercase;letter-spacing:1px;
+  transition:transform .06s,box-shadow .06s;position:relative;overflow:hidden;
 }
-button::after{
-  content:'';
-  position:absolute;
-  inset:0;
-  background:linear-gradient(rgba(255,255,255,0.07) 0%, transparent 50%);
-  pointer-events:none;
-}
+button::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,0.07) 0%,transparent 50%);pointer-events:none;}
 button:hover:not(:disabled){filter:brightness(1.1);}
 button:active:not(:disabled){transform:translate(3px,3px)!important;box-shadow:1px 1px 0 #000!important;}
 button:disabled{background:#333!important;color:#555!important;cursor:not-allowed;box-shadow:none!important;opacity:.6;}
-
 .btn-red{background:#c62828;color:#fff;}
 .btn-green{background:#00c020;color:#000;}
 .btn-yellow{background:var(--gold);color:#1a1a1a;}
 .btn-cyan{background:#0088cc;color:#fff;}
 .btn-gray{background:#2a2a2a;color:#888;border:2px solid #333;}
-
-/* === ERROR === */
-#error-msg,#error-msg2,#error-msg3,#error-msg4{
-  font-size: clamp(6px,1.5vw,7px);
-  color:#ff4500;
-  min-height:14px;
-  margin-bottom:8px;
-  letter-spacing:1px;
-}
-
-/* === BUTTON ROWS === */
+#error-msg,#error-msg2,#error-msg3,#error-msg4{font-size:clamp(6px,1.5vw,7px);color:#ff4500;min-height:14px;margin-bottom:8px;letter-spacing:1px;}
 .btn-flex{display:flex;gap:10px;flex-wrap:wrap;}
-.btn-flex button{flex:1;min-width:120px;padding: clamp(12px,3vw,16px) 8px;}
-
+.btn-flex button{flex:1;min-width:120px;padding:clamp(12px,3vw,16px) 8px;}
 .btn-pair{display:flex;gap:8px;}
 .btn-pair button:first-child{flex:1;}
-
-/* === LOBBY DISPLAY === */
 #lobby-code-display{
-  font-size: clamp(22px,7vw,34px);
-  color:var(--green);
-  text-align:center;
-  letter-spacing: clamp(5px,2vw,10px);
-  border:3px solid var(--green);
-  padding: 12px 20px;
-  margin-bottom:12px;
-  background:#041204;
-  box-shadow:0 0 20px rgba(57,255,20,0.3), inset 0 0 20px rgba(57,255,20,0.05);
+  font-size:clamp(22px,7vw,34px);color:var(--green);text-align:center;
+  letter-spacing:clamp(5px,2vw,10px);border:3px solid var(--green);
+  padding:12px 20px;margin-bottom:12px;background:#041204;
+  box-shadow:0 0 20px rgba(57,255,20,0.3),inset 0 0 20px rgba(57,255,20,0.05);
 }
-
-.lobby-hint{
-  font-size: clamp(5px,1.4vw,7px);
-  color:#555;
-  text-align:center;
-  margin-bottom:14px;
-  line-height:2;
-}
-
-#lobby-player-count{
-  font-size: clamp(6px,1.5vw,7px);
-  color:#666;
-  margin-bottom:10px;
-}
-
-/* === PLAYER PILLS === */
+.lobby-hint{font-size:clamp(5px,1.4vw,7px);color:#555;text-align:center;margin-bottom:14px;line-height:2;}
+#lobby-player-count{font-size:clamp(6px,1.5vw,7px);color:#666;margin-bottom:10px;}
 .player-pill{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  background:#0a0a0a;
-  border:2px solid #252525;
-  padding: 9px 13px;
-  margin-bottom:6px;
-  font-size: clamp(6px,1.5vw,7px);
-  color:#aaa;
-  transition:border-color .2s;
+  display:flex;align-items:center;justify-content:space-between;
+  background:#0a0a0a;border:2px solid #252525;padding:9px 13px;
+  margin-bottom:6px;font-size:clamp(6px,1.5vw,7px);color:#aaa;transition:border-color .2s;
 }
 .player-pill.host-pill{border-color:var(--gold);color:var(--gold);}
 .player-pill.host-pill:hover{box-shadow:0 0 8px rgba(255,215,0,0.15);}
-
-.badge{
-  font-size: clamp(5px,1.2vw,6px);
-  background:var(--gold);
-  color:#000;
-  padding:2px 6px;
-  margin-left:6px;
-}
-.badge-alive{
-  font-size: clamp(5px,1.2vw,6px);
-  background:var(--green);
-  color:#000;
-  padding:2px 6px;
-  margin-left:6px;
-}
-.badge-bot{
-  font-size: clamp(5px,1.2vw,6px);
-  background:#0088cc;
-  color:#fff;
-  padding:2px 6px;
-  margin-left:6px;
-}
+.badge{font-size:clamp(5px,1.2vw,6px);background:var(--gold);color:#000;padding:2px 6px;margin-left:6px;}
+.badge-alive{font-size:clamp(5px,1.2vw,6px);background:var(--green);color:#000;padding:2px 6px;margin-left:6px;}
+.badge-bot{font-size:clamp(5px,1.2vw,6px);background:#0088cc;color:#fff;padding:2px 6px;margin-left:6px;}
 .player-pill.bot-pill{border-color:#0088cc44;color:#00c8ff;}
-.btn-rm-bot{
-  font-family:'Press Start 2P',monospace;
-  font-size:5px;
-  background:transparent;
-  border:1px solid #333;
-  color:#555;
-  padding:2px 5px;
-  cursor:pointer;
-  box-shadow:none;
-  margin-left:6px;
-}
-
-/* === START BTN === */
-#start-btn{
-  width:100%;
-  font-size: clamp(8px,2.5vw,11px);
-  padding: clamp(13px,3vw,17px);
-  margin-top:6px;
-}
-
-/* === SCREENS === */
-.screen{display:none;width:100%;max-width: min(480px, calc(100vw - 20px));flex-direction:column;align-items:center;}
+.btn-rm-bot{font-family:'Press Start 2P',monospace;font-size:5px;background:transparent;border:1px solid #333;color:#555;padding:2px 5px;cursor:pointer;box-shadow:none;margin-left:6px;}
+#start-btn{width:100%;font-size:clamp(8px,2.5vw,11px);padding:clamp(13px,3vw,17px);margin-top:6px;}
+.screen{display:none;width:100%;max-width:min(480px,calc(100vw - 20px));flex-direction:column;align-items:center;}
 .screen.active{display:flex;}
-
-/* === SPINNER === */
-.spinner{
-  display:inline-block;
-  width:10px;height:10px;
-  border:2px solid rgba(255,215,0,.25);
-  border-top-color:var(--gold);
-  border-radius:50%;
-  animation:spin .7s linear infinite;
-  vertical-align:middle;
-  margin-right:6px;
-}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid rgba(255,215,0,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* === EDITOR LINK === */
 .editor-link{
-  font-size: clamp(6px,1.5vw,8px);
-  color:var(--gold);
-  text-shadow:2px 2px 0 #000;
-  text-decoration:none;
-  padding: 8px 14px;
-  background:var(--card);
-  border:2px solid var(--gold);
-  box-shadow:3px 3px 0 #000;
-  z-index:1;
-  position:relative;
-  display:inline-block;
-  margin-top:10px;
-  transition:background .15s;
+  font-size:clamp(6px,1.5vw,8px);color:var(--gold);text-shadow:2px 2px 0 #000;text-decoration:none;
+  padding:8px 14px;background:var(--card);border:2px solid var(--gold);box-shadow:3px 3px 0 #000;
+  z-index:1;position:relative;display:inline-block;margin-top:10px;transition:background .15s;
 }
 .editor-link:hover{background:#222;}
+.field-label{font-size:clamp(6px,1.5vw,7px);color:#666;display:block;margin-bottom:6px;letter-spacing:1px;}
+@media(max-width:360px){.btn-flex{flex-direction:column;}.btn-flex button{min-width:unset;}}
 
-/* === LABEL === */
-.field-label{
-  font-size: clamp(6px,1.5vw,7px);
-  color:#666;
-  display:block;
-  margin-bottom:6px;
-  letter-spacing:1px;
+/* ── PUBLIC LOBBY LIST ── */
+#public-lobbies-section{
+  width:100%;max-width:min(480px,calc(100vw - 20px));
+  position:relative;z-index:1;
+  margin-bottom:12px;
+  display:none;
 }
+.lobby-list-title{
+  font-size:clamp(6px,1.6vw,8px);color:var(--gold);margin-bottom:10px;
+  letter-spacing:2px;display:flex;align-items:center;gap:8px;
+}
+.lobby-list-empty{font-size:clamp(5px,1.3vw,7px);color:#444;text-align:center;padding:14px;border:1px solid #1a1a1a;}
+.lobby-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:#080808;border:2px solid #1e1e1e;padding:9px 12px;
+  margin-bottom:6px;cursor:pointer;transition:border-color .15s,background .15s;
+  font-size:clamp(5px,1.4vw,7px);
+}
+.lobby-row:hover{border-color:var(--cyan);background:#0a1a2a;}
+.lobby-row-host{color:var(--cyan);margin-bottom:3px;}
+.lobby-row-info{color:#555;font-size:clamp(4px,1.2vw,6px);}
+.lobby-row-join{
+  font-family:'Press Start 2P',monospace;font-size:clamp(5px,1.2vw,6px);
+  background:#005a99;color:#fff;border:none;padding:6px 10px;
+  box-shadow:2px 2px 0 #000;cursor:pointer;letter-spacing:1px;
+  flex-shrink:0;margin-left:10px;
+}
+.lobby-row-join:hover{filter:brightness(1.2);}
 
-/* === RESPONSIVE TWEAKS === */
-@media(max-width:360px){
-  .btn-flex{flex-direction:column;}
-  .btn-flex button{min-width:unset;}
-}
+/* ── PRIVACY BADGE ── */
+.privacy-badge-public{font-size:clamp(4px,1.1vw,6px);background:#004e00;color:var(--green);padding:2px 6px;margin-left:6px;border:1px solid #005a00;}
+.privacy-badge-private{font-size:clamp(4px,1.1vw,6px);background:#3a0000;color:#ff6060;padding:2px 6px;margin-left:6px;border:1px solid #5a0000;}
 </style>
 </head>
 <body>
 
 <div class="title-wrap">
   <div class="coin-row">
-    <div class="coin"></div>
-    <div class="coin"></div>
-    <div class="coin"></div>
-    <div class="coin"></div>
-    <div class="coin"></div>
+    <div class="coin"></div><div class="coin"></div><div class="coin"></div>
+    <div class="coin"></div><div class="coin"></div>
   </div>
   <h1>VORTEX ISLANDS</h1>
   <p class="subtitle">▓ SUPER PIXEL EDITION ▓</p>
@@ -407,15 +194,24 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
   </div>
 </div>
 
-<!-- SCREEN 2: Host or Join -->
+<!-- SCREEN 2: Host or Join — shows public lobby list below buttons -->
 <div class="screen" id="screen-menu">
   <div class="card">
     <div class="card-title">👾 WHAT DO YOU WANT TO DO?</div>
     <div id="error-msg2"></div>
     <div class="btn-flex">
       <button class="btn-green" id="host-btn">🏠 HOST GAME</button>
-      <button class="btn-cyan" id="join-btn">🚪 JOIN LOBBY</button>
+      <button class="btn-cyan" id="join-btn">🚪 JOIN BY CODE</button>
     </div>
+  </div>
+
+  <!-- PUBLIC LOBBY BROWSER — only shown in menu screen -->
+  <div id="public-lobbies-section">
+    <div class="lobby-list-title">
+      🌐 OPEN LOBBIES
+      <button id="refresh-lobbies-btn" style="font-size:clamp(5px,1.3vw,6px);background:#1a1a1a;color:#888;border:1px solid #333;padding:4px 8px;box-shadow:none;cursor:pointer;">↻ REFRESH</button>
+    </div>
+    <div id="lobby-list-container"><div class="lobby-list-empty">⚡ LOADING...</div></div>
   </div>
 </div>
 
@@ -431,6 +227,11 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
       <option value="4">4 PLAYERS</option>
       <option value="5">5 PLAYERS</option>
       <option value="6" selected>6 PLAYERS</option>
+    </select>
+    <label class="field-label">LOBBY VISIBILITY</label>
+    <select id="privacy-select">
+      <option value="public">🌐 PUBLIC — anyone can see & join</option>
+      <option value="private">🔒 PRIVATE — code only</option>
     </select>
     <div class="btn-pair">
       <button class="btn-yellow" id="create-lobby-btn">CREATE!</button>
@@ -456,10 +257,10 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
 <!-- SCREEN 4: Lobby Room -->
 <div class="screen" id="screen-lobby">
   <div class="card">
-    <div class="card-title">🏝 LOBBY</div>
-    <div style="text-align:center;font-size:clamp(5px,1.5vw,7px);color:#555;margin-bottom:6px;letter-spacing:1px;">SHARE THIS CODE WITH FRIENDS:</div>
+    <div class="card-title" id="lobby-card-title">🏝 LOBBY</div>
+    <div style="text-align:center;font-size:clamp(5px,1.5vw,7px);color:#555;margin-bottom:6px;letter-spacing:1px;" id="lobby-share-hint">SHARE THIS CODE WITH FRIENDS:</div>
     <div id="lobby-code-display">-----</div>
-    <div class="lobby-hint">Friends join via VORTEX ISLANDS → JOIN LOBBY</div>
+    <div class="lobby-hint" id="lobby-join-hint">Friends join via VORTEX ISLANDS → JOIN BY CODE</div>
     <div id="lobby-player-count">PLAYERS: 0 / 0</div>
     <div id="lobby-players-list"></div>
     <div id="bot-controls" style="display:none;margin-bottom:10px;">
@@ -474,25 +275,32 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
 
 <script>
 let myUsername = null, currentLobby = null, lobbyPollInterval = null;
+let publicLobbiesInterval = null;
 const API = '/api/game';
 
 async function api(action, body) {
   if (body) {
     const r = await fetch(`${API}?action=${action}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     return r.json();
   } else {
-    const r = await fetch(`${API}?action=${action}`);
-    return r.json();
+    return (await fetch(`${API}?action=${action}`)).json();
   }
 }
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if (id === 'screen-menu') {
+    document.getElementById('public-lobbies-section').style.display = 'block';
+    loadPublicLobbies();
+    publicLobbiesInterval = setInterval(loadPublicLobbies, 5000);
+  } else {
+    document.getElementById('public-lobbies-section').style.display = 'none';
+    if (publicLobbiesInterval) { clearInterval(publicLobbiesInterval); publicLobbiesInterval = null; }
+  }
 }
 
 function showError(id, txt) {
@@ -502,21 +310,70 @@ function showError(id, txt) {
 
 function setStatus(msg, isErr) {
   const bar = document.getElementById('status-bar');
-  bar.textContent = msg;
-  bar.className = isErr ? 'err' : '';
+  bar.textContent = msg; bar.className = isErr ? 'err' : '';
 }
 
+// ── PUBLIC LOBBY LIST ─────────────────────────────────────────────────────────
+async function loadPublicLobbies() {
+  try {
+    const data = await (await fetch(`${API}?action=public_lobbies`)).json();
+    const container = document.getElementById('lobby-list-container');
+    if (!data.lobbies || data.lobbies.length === 0) {
+      container.innerHTML = '<div class="lobby-list-empty">No open lobbies right now. Host one!</div>';
+      return;
+    }
+    container.innerHTML = data.lobbies.map(l => `
+      <div class="lobby-row" onclick="quickJoin('${l.code}')">
+        <div>
+          <div class="lobby-row-host">🏠 ${l.host}</div>
+          <div class="lobby-row-info">👥 ${l.players}/${l.maxPlayers} players${l.bots > 0 ? ` · 🤖 ${l.bots} bot(s)` : ''} · CODE: ${l.code}</div>
+        </div>
+        <button class="lobby-row-join" onclick="event.stopPropagation();quickJoin('${l.code}')">JOIN →</button>
+      </div>`).join('');
+  } catch(e) {
+    document.getElementById('lobby-list-container').innerHTML = '<div class="lobby-list-empty">⚠ Could not load lobbies.</div>';
+  }
+}
+
+async function quickJoin(code) {
+  if (!myUsername) return showError('error-msg2', 'REGISTER YOUR NAME FIRST!');
+  setStatus('⚡ JOINING...');
+  const data = await api('join_lobby', { username: myUsername, code });
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg2', data.error); }
+  renderLobbyPlayers(data.lobby);
+  setStatus('⚡ JOINED LOBBY!');
+  showScreen('screen-lobby');
+  startLobbyPolling(code);
+}
+
+document.getElementById('refresh-lobbies-btn').onclick = loadPublicLobbies;
+
+// ── LOBBY RENDER ──────────────────────────────────────────────────────────────
 function renderLobbyPlayers(lobby) {
   currentLobby = lobby;
   document.getElementById('lobby-code-display').textContent = lobby.code;
   document.getElementById('lobby-player-count').textContent =
     `PLAYERS: ${lobby.players.length} / ${lobby.maxPlayers}`;
 
+  // Show privacy badge in title
+  const privBadge = lobby.privacy === 'private'
+    ? '<span class="privacy-badge-private">🔒 PRIVATE</span>'
+    : '<span class="privacy-badge-public">🌐 PUBLIC</span>';
+  document.getElementById('lobby-card-title').innerHTML = `🏝 LOBBY ${privBadge}`;
+
+  // Update hint based on privacy
+  if (lobby.privacy === 'private') {
+    document.getElementById('lobby-share-hint').textContent = '🔒 PRIVATE — SHARE CODE WITH FRIENDS:';
+    document.getElementById('lobby-join-hint').textContent = 'Only players with the code can join';
+  } else {
+    document.getElementById('lobby-share-hint').textContent = 'SHARE THIS CODE WITH FRIENDS:';
+    document.getElementById('lobby-join-hint').textContent = 'Lobby visible in public list · Friends can also join by code';
+  }
+
   const isHost = myUsername === lobby.host;
   const bots = lobby.bots || [];
 
-  const list = document.getElementById('lobby-players-list');
-  list.innerHTML = lobby.players.map(u => {
+  document.getElementById('lobby-players-list').innerHTML = lobby.players.map(u => {
     const isBot = bots.includes(u);
     const isThisHost = u === lobby.host;
     return `
@@ -532,21 +389,15 @@ function renderLobbyPlayers(lobby) {
     </div>`;
   }).join('');
 
-  // Show/hide add-bot button (host only, not full)
   const botControls = document.getElementById('bot-controls');
-  if (isHost && lobby.players.length < lobby.maxPlayers) {
-    botControls.style.display = 'block';
-  } else {
-    botControls.style.display = 'none';
-  }
+  botControls.style.display = isHost && lobby.players.length < lobby.maxPlayers ? 'block' : 'none';
 
   const startBtn = document.getElementById('start-btn');
   if (isHost) {
     startBtn.style.display = 'block';
     startBtn.disabled = lobby.players.length < 2;
     startBtn.textContent = lobby.players.length < 2
-      ? '⏳ WAITING FOR PLAYERS...'
-      : `⚔ START BATTLE! (${lobby.players.length}P)`;
+      ? '⏳ WAITING FOR PLAYERS...' : `⚔ START BATTLE! (${lobby.players.length}P)`;
   } else {
     startBtn.style.display = 'none';
   }
@@ -556,26 +407,23 @@ function startLobbyPolling(code) {
   stopLobbyPolling();
   lobbyPollInterval = setInterval(async () => {
     try {
-      const data = await fetch(`${API}?action=lobby&code=${code}`).then(r => r.json());
+      const data = await (await fetch(`${API}?action=lobby&code=${code}`)).json();
       if (data.error) { stopLobbyPolling(); return; }
       const lobby = data.lobby;
       if (lobby.status === 'in_game') {
         stopLobbyPolling();
-        if (lobby.gameId) {
-          location.href = `game.html?gameId=${lobby.gameId}&username=${encodeURIComponent(myUsername)}`;
-        }
+        if (lobby.gameId) location.href = `game.html?gameId=${lobby.gameId}&username=${encodeURIComponent(myUsername)}`;
         return;
       }
       renderLobbyPlayers(lobby);
-    } catch (e) {}
+    } catch(e) {}
   }, 1500);
 }
-
 function stopLobbyPolling() {
   if (lobbyPollInterval) { clearInterval(lobbyPollInterval); lobbyPollInterval = null; }
 }
 
-// Register
+// ── REGISTER ──────────────────────────────────────────────────────────────────
 document.getElementById('register-btn').onclick = async () => {
   const name = document.getElementById('username-input').value.trim();
   if (!name) return showError('error-msg', 'ENTER YOUR NAME!');
@@ -590,12 +438,13 @@ document.getElementById('username-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('register-btn').click();
 });
 
-// Host
+// ── HOST ──────────────────────────────────────────────────────────────────────
 document.getElementById('host-btn').onclick = () => showScreen('screen-create');
 document.getElementById('create-lobby-btn').onclick = async () => {
   const max = parseInt(document.getElementById('max-players-select').value) || 6;
+  const privacy = document.getElementById('privacy-select').value;
   setStatus('⚡ CREATING LOBBY...');
-  const data = await api('create_lobby', { username: myUsername, maxPlayers: max });
+  const data = await api('create_lobby', { username: myUsername, maxPlayers: max, privacy });
   if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg3', data.error); }
   renderLobbyPlayers(data.lobby);
   setStatus(`⚡ LOBBY CREATED — CODE: ${data.lobby.code}`);
@@ -603,7 +452,7 @@ document.getElementById('create-lobby-btn').onclick = async () => {
   startLobbyPolling(data.lobby.code);
 };
 
-// Join
+// ── JOIN BY CODE ──────────────────────────────────────────────────────────────
 document.getElementById('join-btn').onclick = () => showScreen('screen-join');
 document.getElementById('join-lobby-btn').onclick = async () => {
   const code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
@@ -620,7 +469,7 @@ document.getElementById('lobby-code-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('join-lobby-btn').click();
 });
 
-// Start game (host only)
+// ── START ─────────────────────────────────────────────────────────────────────
 document.getElementById('start-btn').onclick = async () => {
   if (!currentLobby) return;
   setStatus('⚡ STARTING BATTLE...');
@@ -630,29 +479,25 @@ document.getElementById('start-btn').onclick = async () => {
   location.href = `game.html?gameId=${data.gameId}&username=${encodeURIComponent(myUsername)}`;
 };
 
-// Leave lobby
+// ── LEAVE ─────────────────────────────────────────────────────────────────────
 document.getElementById('leave-lobby-btn').onclick = async () => {
   if (currentLobby) await api('leave_lobby', { username: myUsername, code: currentLobby.code });
-  stopLobbyPolling();
-  currentLobby = null;
+  stopLobbyPolling(); currentLobby = null;
   setStatus('⚡ READY');
   showScreen('screen-menu');
 };
 
-// Add bot
+// ── ADD/REMOVE BOT ────────────────────────────────────────────────────────────
 document.getElementById('add-bot-btn').onclick = async () => {
   if (!currentLobby) return;
   const data = await api('add_bot', { username: myUsername, code: currentLobby.code });
   if (data.error) return showError('error-msg2', data.error);
-  renderLobbyPlayers(data.lobby);
-  setStatus(`🤖 BOT ADDED!`);
+  renderLobbyPlayers(data.lobby); setStatus('🤖 BOT ADDED!');
 };
-
 async function removeBot(botName) {
   if (!currentLobby) return;
   const data = await api('remove_bot', { username: myUsername, code: currentLobby.code, botName });
-  if (data.error) return;
-  renderLobbyPlayers(data.lobby);
+  if (!data.error) renderLobbyPlayers(data.lobby);
 }
 </script>
 </body>
