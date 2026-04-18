@@ -112,6 +112,10 @@ body{
   color:var(--green);
   box-shadow:0 0 8px rgba(57,255,20,0.25);
 }
+.island-name-tag.bot-tag{
+  border-color:#0088cc55;
+  color:#00c8ff;
+}
 
 /* ISLAND CANVAS — responsive sizing */
 .island-canvas{
@@ -618,9 +622,11 @@ async function getState() {
 // ══ Render islands ════════════════════════════════════
 function renderIslands(state) {
   const row = document.getElementById('islands-row');
+  const bots = state.bots || [];
   state.players.forEach(u => {
     const isAlive = state.islands[u] && state.islands[u].alive !== false;
     const isMe = u === MY_NAME;
+    const isBot = bots.includes(u);
     const inv = state.islands[u]?.inventory || { cannons: 0, slicers: 0 };
     let panel = document.getElementById('panel-' + u);
     if (!panel) {
@@ -629,7 +635,7 @@ function renderIslands(state) {
       panel.id = 'panel-' + u;
       const sz = getIslandSize();
       panel.innerHTML = `
-        <div class="island-name-tag" id="nametag-${u}">${u}</div>
+        <div class="island-name-tag" id="nametag-${u}">${isBot ? '🤖' : '🧑'} ${u}</div>
         <canvas class="island-canvas" id="canvas-${u}" width="${sz.w}" height="${sz.h}"></canvas>
         <div class="island-stats" id="stats-${u}">...</div>
         <div class="inv-badge" id="inv-${u}" style="display:none">📦 💣×0 ⚔×0</div>`;
@@ -639,7 +645,10 @@ function renderIslands(state) {
     else panel.classList.remove('eliminated');
 
     const tag = document.getElementById('nametag-' + u);
-    if (tag) tag.className = 'island-name-tag' + (isMe ? ' my-tag' : '');
+    if (tag) {
+      if (isBot) tag.className = 'island-name-tag bot-tag';
+      else tag.className = 'island-name-tag' + (isMe ? ' my-tag' : '');
+    }
 
     const canvas = document.getElementById('canvas-' + u);
     if (canvas && state.grids[u]) renderIslandCanvas(canvas, state.grids[u], state.islands[u]?.shields || 0);
