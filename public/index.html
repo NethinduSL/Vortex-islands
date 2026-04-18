@@ -169,9 +169,110 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
 /* ── PRIVACY BADGE ── */
 .privacy-badge-public{font-size:clamp(4px,1.1vw,6px);background:#004e00;color:var(--green);padding:2px 6px;margin-left:6px;border:1px solid #005a00;}
 .privacy-badge-private{font-size:clamp(4px,1.1vw,6px);background:#3a0000;color:#ff6060;padding:2px 6px;margin-left:6px;border:1px solid #5a0000;}
+
+/* ── CREATOR SPLASH ── */
+#creator-splash{
+  position:fixed;inset:0;z-index:9999;
+  background:radial-gradient(ellipse at 50% 40%,#1a0533 0%,#0a0010 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(10px,3vh,20px);
+  animation:splashFade 0.6s ease both;
+}
+#creator-splash.hide{animation:splashOut 0.7s ease forwards;}
+@keyframes splashFade{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+@keyframes splashOut{to{opacity:0;transform:scale(1.04);pointer-events:none}}
+.splash-logo{
+  font-size:clamp(22px,7vw,44px);color:#ffd700;
+  text-shadow:0 0 30px #ffd700,4px 4px 0 #7a3a10;
+  letter-spacing:clamp(3px,2vw,8px);text-align:center;
+  animation:glow 1.5s ease-in-out infinite alternate;
+}
+@keyframes glow{to{text-shadow:0 0 50px #ffd700,0 0 80px rgba(255,215,0,0.4),4px 4px 0 #7a3a10}}
+.splash-sub{font-size:clamp(6px,1.8vw,9px);color:#aaa;letter-spacing:3px;text-align:center;}
+.splash-by{font-size:clamp(7px,2vw,10px);color:#00c8ff;letter-spacing:2px;text-align:center;
+  text-shadow:0 0 12px rgba(0,200,255,0.5);}
+.splash-name{color:#ffd700;text-shadow:0 0 12px rgba(255,215,0,0.6);}
+.splash-skip{
+  font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.5vw,7px);
+  color:#555;background:transparent;border:1px solid #222;padding:8px 16px;
+  cursor:pointer;letter-spacing:1px;box-shadow:none;margin-top:8px;
+}
+.splash-skip:hover{color:#888;border-color:#444;}
+.splash-bar{
+  width:clamp(160px,40vw,280px);height:4px;background:#1a1a1a;
+  border:1px solid #333;overflow:hidden;
+}
+.splash-bar-fill{height:100%;background:linear-gradient(90deg,#ffd700,#00c8ff);
+  animation:barFill 2.2s linear forwards;}
+@keyframes barFill{from{width:0%}to{width:100%}}
+
+/* ── ONLINE PLAYERS PANEL ── */
+#online-panel{
+  width:100%;max-width:min(480px,calc(100vw - 20px));
+  position:relative;z-index:1;margin-bottom:12px;
+}
+.online-title{
+  font-size:clamp(6px,1.5vw,7px);color:var(--green);letter-spacing:2px;
+  margin-bottom:8px;display:flex;align-items:center;gap:8px;
+}
+.online-dot{width:7px;height:7px;background:var(--green);border-radius:50%;
+  box-shadow:0 0 6px var(--green);display:inline-block;animation:pulse2 1.2s ease-in-out infinite alternate;}
+@keyframes pulse2{to{box-shadow:0 0 12px var(--green),0 0 20px rgba(57,255,20,0.4);}}
+.online-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:#070707;border:1px solid #1a1a1a;padding:7px 11px;
+  margin-bottom:4px;font-size:clamp(5px,1.3vw,6px);color:#aaa;
+}
+.online-row-name{color:var(--cyan);}
+.online-row-me{color:var(--green);}
+.invite-btn{
+  font-family:'Press Start 2P',monospace;font-size:clamp(4px,1.1vw,5px);
+  background:#003355;color:#00c8ff;border:1px solid #005588;
+  padding:4px 8px;cursor:pointer;box-shadow:2px 2px 0 #000;letter-spacing:1px;
+  flex-shrink:0;
+}
+.invite-btn:hover{background:#004477;}
+.invite-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.online-empty{font-size:clamp(5px,1.3vw,6px);color:#333;text-align:center;padding:10px;}
+
+/* ── INVITE TOAST ── */
+#invite-toast{
+  position:fixed;bottom:clamp(50px,8vh,70px);left:50%;transform:translateX(-50%);
+  background:#0a1a2a;border:3px solid var(--cyan);
+  padding:14px 20px;z-index:1000;display:none;flex-direction:column;
+  align-items:center;gap:10px;box-shadow:0 0 20px rgba(0,200,255,0.3);
+  min-width:clamp(220px,60vw,340px);
+}
+#invite-toast.visible{display:flex;}
+.toast-msg{font-size:clamp(6px,1.5vw,7px);color:var(--cyan);text-align:center;letter-spacing:1px;}
+.toast-btns{display:flex;gap:10px;}
+.toast-accept{font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.5vw,7px);
+  background:#004400;color:var(--green);border:2px solid var(--green);
+  padding:8px 14px;cursor:pointer;box-shadow:2px 2px 0 #000;}
+.toast-decline{font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.5vw,7px);
+  background:#440000;color:#ff4444;border:2px solid #aa0000;
+  padding:8px 14px;cursor:pointer;box-shadow:2px 2px 0 #000;}
 </style>
 </head>
 <body>
+
+<!-- CREATOR SPLASH -->
+<div id="creator-splash">
+  <div class="splash-logo">🏝 VORTEX<br>ISLANDS</div>
+  <div class="splash-sub">SUPER PIXEL EDITION</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+  <div class="splash-by">CREATED BY<br><span class="splash-name">✦ NETHINDU THAMINDA ✦</span></div>
+  <button class="splash-skip" onclick="closeSplash()">▶ SKIP</button>
+</div>
+
+<!-- INVITE TOAST -->
+<div id="invite-toast">
+  <div class="toast-msg" id="toast-msg">📨 LOBBY INVITE!</div>
+  <div class="toast-btns">
+    <button class="toast-accept" id="toast-accept">✓ JOIN</button>
+    <button class="toast-decline" onclick="dismissToast()">✕ DECLINE</button>
+  </div>
+</div>
 
 <div class="title-wrap">
   <div class="coin-row">
@@ -203,6 +304,12 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
       <button class="btn-green" id="host-btn">🏠 HOST GAME</button>
       <button class="btn-cyan" id="join-btn">🚪 JOIN BY CODE</button>
     </div>
+  </div>
+
+  <!-- ONLINE PLAYERS PANEL -->
+  <div id="online-panel" style="display:none;">
+    <div class="online-title"><span class="online-dot"></span> ONLINE PLAYERS <span id="online-count" style="color:#555;">(0)</span></div>
+    <div id="online-list"><div class="online-empty">No other players online</div></div>
   </div>
 
   <!-- PUBLIC LOBBY BROWSER — only shown in menu screen -->
@@ -275,18 +382,50 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
 
 <script>
 let myUsername = null, currentLobby = null, lobbyPollInterval = null;
-let publicLobbiesInterval = null;
+let publicLobbiesInterval = null, onlineInterval = null, heartbeatInterval = null;
+let pendingInvite = null;
 const API = '/api/game';
 
+// ── Saved name ──────────────────────────────────────────────────────────────
+(function loadSavedName(){
+  try {
+    const saved = localStorage.getItem('vortex_username');
+    if (saved) {
+      document.getElementById('username-input').value = saved;
+      document.getElementById('username-input').style.borderColor = '#39ff14';
+    }
+  } catch(e){}
+})();
+
+// ── Creator splash ───────────────────────────────────────────────────────────
+let splashTimer = setTimeout(closeSplash, 2800);
+function closeSplash() {
+  clearTimeout(splashTimer);
+  const sp = document.getElementById('creator-splash');
+  if (!sp) return;
+  sp.classList.add('hide');
+  setTimeout(() => sp.remove(), 750);
+}
+
+// Fetch with 8s timeout to prevent hanging on slow/cold server
+async function fetchTimeout(url, opts) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(url, { ...opts, signal: ctrl.signal });
+    clearTimeout(tid);
+    return r;
+  } catch(e) { clearTimeout(tid); throw e; }
+}
 async function api(action, body) {
   if (body) {
-    const r = await fetch(`${API}?action=${action}`, {
+    const r = await fetchTimeout(`${API}?action=${action}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     return r.json();
   } else {
-    return (await fetch(`${API}?action=${action}`)).json();
+    return (await fetchTimeout(`${API}?action=${action}`)).json();
   }
 }
 
@@ -295,11 +434,16 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
   if (id === 'screen-menu') {
     document.getElementById('public-lobbies-section').style.display = 'block';
+    document.getElementById('online-panel').style.display = 'block';
     loadPublicLobbies();
+    loadOnlinePlayers();
     publicLobbiesInterval = setInterval(loadPublicLobbies, 5000);
+    onlineInterval = setInterval(loadOnlinePlayers, 3000);
   } else {
     document.getElementById('public-lobbies-section').style.display = 'none';
+    document.getElementById('online-panel').style.display = 'none';
     if (publicLobbiesInterval) { clearInterval(publicLobbiesInterval); publicLobbiesInterval = null; }
+    if (onlineInterval) { clearInterval(onlineInterval); onlineInterval = null; }
   }
 }
 
@@ -431,7 +575,9 @@ document.getElementById('register-btn').onclick = async () => {
   const data = await api('register', { username: name });
   if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg', data.error); }
   myUsername = data.username;
+  try { localStorage.setItem('vortex_username', myUsername); } catch(e){}
   setStatus(`⚡ WELCOME, ${myUsername}!`);
+  startHeartbeat();
   showScreen('screen-menu');
 };
 document.getElementById('username-input').addEventListener('keydown', e => {
@@ -498,6 +644,98 @@ async function removeBot(botName) {
   if (!currentLobby) return;
   const data = await api('remove_bot', { username: myUsername, code: currentLobby.code, botName });
   if (!data.error) renderLobbyPlayers(data.lobby);
+}
+
+// ── HEARTBEAT — keep player in online list ────────────────────────────────────
+function startHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  async function beat() {
+    if (!myUsername) return;
+    try {
+      const data = await api('heartbeat', { username: myUsername });
+      // Check for pending invites
+      if (data && data.invites && data.invites.length > 0) {
+        const inv = data.invites[data.invites.length - 1];
+        showInviteToast(inv);
+      }
+    } catch(e) {}
+  }
+  beat();
+  heartbeatInterval = setInterval(beat, 8000);
+}
+
+// ── ONLINE PLAYERS LIST ───────────────────────────────────────────────────────
+async function loadOnlinePlayers() {
+  if (!myUsername) return;
+  try {
+    const data = await (await fetchTimeout(`${API}?action=online_players&username=${encodeURIComponent(myUsername)}`)).json();
+    const players = data.players || [];
+    const countEl = document.getElementById('online-count');
+    const listEl = document.getElementById('online-list');
+    if (countEl) countEl.textContent = `(${players.length})`;
+    if (!listEl) return;
+    if (players.length === 0) {
+      listEl.innerHTML = '<div class="online-empty">No players online</div>';
+      return;
+    }
+    listEl.innerHTML = players.map(p => {
+      const isMe = p === myUsername;
+      return `<div class="online-row">
+        <span class="${isMe ? 'online-row-me' : 'online-row-name'}">${isMe ? '★ ' : ''}${p}${isMe ? ' (YOU)' : ''}</span>
+        ${!isMe && currentLobby && currentLobby.host === myUsername && currentLobby.status === 'waiting'
+          ? `<button class="invite-btn" onclick="sendInvite('${p}')">📨 INVITE</button>`
+          : !isMe ? `<span style="font-size:clamp(4px,1vw,5px);color:#333;">IN LOBBY: ${currentLobby ? currentLobby.code : 'NONE'}</span>` : ''}
+      </div>`;
+    }).join('');
+
+    // Also check pending invites in this response
+    if (data.invites && data.invites.length > 0) {
+      showInviteToast(data.invites[data.invites.length - 1]);
+    }
+  } catch(e) {}
+}
+
+// ── SEND INVITE ───────────────────────────────────────────────────────────────
+async function sendInvite(toPlayer) {
+  if (!currentLobby || !myUsername) return;
+  try {
+    const data = await api('send_invite', { from: myUsername, to: toPlayer, lobbyCode: currentLobby.code });
+    if (data.error) { setStatus('⚠ ' + data.error, true); return; }
+    setStatus(`📨 INVITE SENT TO ${toPlayer}!`);
+  } catch(e) { setStatus('⚠ INVITE FAILED', true); }
+}
+
+// ── INVITE TOAST ──────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showInviteToast(inv) {
+  pendingInvite = inv;
+  const toast = document.getElementById('invite-toast');
+  const msg = document.getElementById('toast-msg');
+  const acceptBtn = document.getElementById('toast-accept');
+  if (!toast || !msg) return;
+  msg.textContent = `📨 ${inv.from} INVITES YOU TO LOBBY ${inv.lobbyCode}!`;
+  acceptBtn.onclick = () => acceptInvite(inv.lobbyCode);
+  toast.classList.add('visible');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(dismissToast, 15000);
+}
+function dismissToast() {
+  pendingInvite = null;
+  const toast = document.getElementById('invite-toast');
+  if (toast) toast.classList.remove('visible');
+}
+async function acceptInvite(lobbyCode) {
+  dismissToast();
+  if (!myUsername) return;
+  setStatus('⚡ JOINING LOBBY...');
+  try {
+    const data = await api('join_lobby', { username: myUsername, code: lobbyCode });
+    if (data.error) { setStatus('❌ ' + data.error, true); return; }
+    renderLobbyPlayers(data.lobby);
+    setStatus('⚡ JOINED LOBBY!');
+    showScreen('screen-lobby');
+    startLobbyPolling(lobbyCode);
+  } catch(e) { setStatus('❌ JOIN FAILED', true); }
 }
 </script>
 </body>
