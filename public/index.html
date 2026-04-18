@@ -2,117 +2,410 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>VORTEX ISLANDS</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{
-  background:#5c94fc;
-  background-image:
-    radial-gradient(ellipse 120px 60px at 15% 30%,#fff 0%,#fff 60%,transparent 70%),
-    radial-gradient(ellipse 80px 40px at 25% 35%,#fff 0%,transparent 70%),
-    radial-gradient(ellipse 100px 50px at 70% 20%,#fff 0%,#fff 55%,transparent 68%),
-    radial-gradient(ellipse 60px 30px at 80% 25%,#fff 0%,transparent 65%);
-  min-height:100vh;font-family:'Press Start 2P',monospace;
-  display:flex;flex-direction:column;align-items:center;padding:28px 16px 70px;color:#1a1a1a;
+
+:root{
+  --sky:#3a8efc;
+  --sky2:#1a5fd4;
+  --gold:#ffd700;
+  --green:#39ff14;
+  --red:#e53935;
+  --cyan:#00c8ff;
+  --dark:#0d0d0d;
+  --card:#141414;
+  --border:4px solid var(--gold);
 }
-body::after{content:'';position:fixed;bottom:0;left:0;right:0;height:40px;
-  background:repeating-linear-gradient(90deg,#4caf50 0px,#4caf50 16px,#388e3c 16px,#388e3c 32px);
-  border-top:4px solid #2e7d32;z-index:0;}
-h1{font-size:clamp(14px,4vw,24px);color:#fff;text-shadow:4px 4px 0 #8b4513,-2px -2px 0 #8b4513,2px -2px 0 #8b4513;
-  letter-spacing:3px;margin-bottom:6px;text-align:center;}
-.subtitle{font-size:7px;color:#ffd700;text-shadow:2px 2px 0 #8b4513;margin-bottom:24px;letter-spacing:2px;}
-.card{background:#1a1a1a;border:4px solid #ffd700;box-shadow:4px 4px 0 #000,8px 8px 0 #8b4513;
-  padding:18px;width:100%;max-width:480px;margin-bottom:14px;position:relative;z-index:1;}
-.card-title{font-size:8px;color:#ffd700;margin-bottom:14px;letter-spacing:2px;}
-input[type="text"],input[type="number"]{background:#0a0a0a;border:3px solid #ffd700;color:#fff;
-  font-family:'Press Start 2P',monospace;font-size:9px;padding:10px;width:100%;outline:none;margin-bottom:8px;}
-input:focus{border-color:#39ff14;}
-button{font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;border:none;
-  padding:10px 16px;box-shadow:4px 4px 0 #000;text-transform:uppercase;letter-spacing:1px;}
-button:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
-button:disabled{background:#444!important;color:#777!important;cursor:not-allowed;box-shadow:none;}
-.btn-red{background:#e53935;color:#fff;} .btn-green{background:#39ff14;color:#0a0a0a;}
-.btn-yellow{background:#ffd700;color:#1a1a1a;} .btn-cyan{background:#00aaff;color:#1a1a1a;}
-.btn-gray{background:#444;color:#ccc;}
-#status-bar{font-size:7px;color:#39ff14;margin-bottom:6px;min-height:16px;z-index:1;position:relative;}
-#status-bar.err{color:#ff1744;}
-#error-msg{font-size:7px;color:#ff4500;min-height:14px;margin-bottom:6px;}
-.row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;}
-.row input{flex:1;min-width:100px;margin:0;}
-.spinner{display:inline-block;width:10px;height:10px;border:2px solid #ffd70044;border-top-color:#ffd700;
-  border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.coin-row{display:flex;gap:8px;justify-content:center;margin-bottom:16px;z-index:1;position:relative;}
-.coin{width:20px;height:20px;background:#ffd700;box-shadow:2px 2px 0 #8b6914,inset -2px -2px 0 #ff9800;
-  border-radius:50%;animation:bob .8s ease-in-out infinite alternate;}
-.coin:nth-child(2){animation-delay:.15s}.coin:nth-child(3){animation-delay:.3s}.coin:nth-child(4){animation-delay:.45s}
-@keyframes bob{to{transform:translateY(-4px)}}
-.screen{display:none;width:100%;max-width:480px;flex-direction:column;align-items:center;gap:0;}
+
+html,body{
+  min-height:100%;
+  width:100%;
+  overflow-x:hidden;
+}
+
+body{
+  background: var(--sky);
+  background-image:
+    /* sun glow */
+    radial-gradient(circle 180px at 85% 12%, rgba(255,235,100,0.35) 0%, transparent 70%),
+    /* clouds */
+    radial-gradient(ellipse 140px 55px at 12% 18%, #fff 0%, #f0f8ff 55%, transparent 72%),
+    radial-gradient(ellipse 90px 38px at 22% 24%, #fff 0%, transparent 70%),
+    radial-gradient(ellipse 120px 48px at 55% 10%, #fff 0%, #eaf4ff 50%, transparent 68%),
+    radial-gradient(ellipse 70px 28px at 65% 16%, #fff 0%, transparent 65%),
+    radial-gradient(ellipse 100px 40px at 90% 28%, #fff 0%, #edf7ff 55%, transparent 70%),
+    /* sky gradient */
+    linear-gradient(180deg, #1a5fd4 0%, #3a8efc 45%, #6abaff 100%);
+  font-family:'Press Start 2P',monospace;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding: clamp(16px,4vw,36px) clamp(10px,3vw,20px) 80px;
+  color:#1a1a1a;
+  position:relative;
+}
+
+/* === GROUND === */
+body::after{
+  content:'';
+  position:fixed;
+  bottom:0; left:0; right:0;
+  height: clamp(30px,5vh,48px);
+  background:
+    repeating-linear-gradient(90deg,
+      #4caf50 0px, #4caf50 18px,
+      #388e3c 18px, #388e3c 36px,
+      #43a047 36px, #43a047 54px);
+  border-top: 4px solid #2e7d32;
+  box-shadow: 0 -4px 0 #1b5e20;
+  z-index:0;
+}
+
+/* === TITLE === */
+.title-wrap{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  margin-bottom: clamp(12px,3vh,22px);
+}
+
+.coin-row{
+  display:flex;gap:clamp(6px,2vw,12px);justify-content:center;
+  margin-bottom: clamp(8px,2vh,14px);
+  z-index:1;position:relative;
+}
+
+.coin{
+  width: clamp(16px,4vw,24px);
+  height: clamp(16px,4vw,24px);
+  background: radial-gradient(circle at 35% 35%, #ffe680, #ffd700 50%, #c8a800);
+  box-shadow: 2px 2px 0 #8b6914, inset -2px -2px 0 rgba(0,0,0,0.2);
+  border-radius:50%;
+  animation:bob .9s ease-in-out infinite alternate;
+}
+.coin:nth-child(2){animation-delay:.18s}
+.coin:nth-child(3){animation-delay:.36s}
+.coin:nth-child(4){animation-delay:.54s}
+.coin:nth-child(5){animation-delay:.72s}
+@keyframes bob{to{transform:translateY(-5px)}}
+
+h1{
+  font-size: clamp(16px, 5.5vw, 30px);
+  color:#fff;
+  text-shadow:
+    3px 3px 0 #7a3a10,
+    -2px -2px 0 #7a3a10,
+    2px -2px 0 #7a3a10,
+    -2px 2px 0 #7a3a10,
+    0 0 30px rgba(255,215,0,0.5);
+  letter-spacing: clamp(2px,1vw,5px);
+  margin-bottom: 6px;
+}
+
+.subtitle{
+  font-size: clamp(5px,1.5vw,8px);
+  color:#ffd700;
+  text-shadow:2px 2px 0 #7a3a10;
+  letter-spacing:3px;
+}
+
+/* === STATUS === */
+#status-bar{
+  font-size: clamp(6px,1.8vw,8px);
+  color:var(--green);
+  margin-bottom:8px;
+  min-height:18px;
+  z-index:1;
+  position:relative;
+  text-shadow:0 0 8px var(--green);
+  letter-spacing:1px;
+}
+#status-bar.err{color:#ff1744;text-shadow:0 0 8px #ff1744;}
+
+/* === CARDS === */
+.card{
+  background: var(--card);
+  border: 3px solid var(--gold);
+  box-shadow:
+    5px 5px 0 #000,
+    9px 9px 0 #7a5a00,
+    0 0 20px rgba(255,215,0,0.08);
+  padding: clamp(14px,3vw,22px);
+  width:100%;
+  max-width: min(480px, calc(100vw - 20px));
+  margin-bottom: 12px;
+  position:relative;
+  z-index:1;
+}
+
+.card::before{
+  content:'';
+  position:absolute;
+  inset:3px;
+  border:1px solid rgba(255,215,0,0.08);
+  pointer-events:none;
+}
+
+.card-title{
+  font-size: clamp(7px,2vw,10px);
+  color:var(--gold);
+  margin-bottom: 14px;
+  letter-spacing:2px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* === INPUTS === */
+input[type="text"],input[type="number"]{
+  background:#080808;
+  border:3px solid var(--gold);
+  color:#fff;
+  font-family:'Press Start 2P',monospace;
+  font-size: clamp(8px,2.2vw,10px);
+  padding: clamp(10px,2.5vw,13px);
+  width:100%;
+  outline:none;
+  margin-bottom:10px;
+  transition:border-color .15s, box-shadow .15s;
+}
+input:focus{
+  border-color:var(--green);
+  box-shadow:0 0 12px rgba(57,255,20,0.2);
+}
+input::placeholder{color:#444;}
+
+select{
+  background:#080808;
+  border:3px solid var(--gold);
+  color:var(--gold);
+  font-family:'Press Start 2P',monospace;
+  font-size: clamp(8px,2.2vw,10px);
+  padding: clamp(10px,2.5vw,13px);
+  width:100%;
+  outline:none;
+  margin-bottom:12px;
+  cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%23ffd700'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position: right 12px center;
+  padding-right:32px;
+}
+select:focus{border-color:var(--green);}
+
+/* === BUTTONS === */
+button{
+  font-family:'Press Start 2P',monospace;
+  font-size: clamp(7px,2vw,9px);
+  cursor:pointer;
+  border:none;
+  padding: clamp(10px,2.5vw,13px) clamp(12px,3vw,18px);
+  box-shadow:4px 4px 0 #000;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  transition:transform .06s,box-shadow .06s;
+  position:relative;
+  overflow:hidden;
+}
+button::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(rgba(255,255,255,0.07) 0%, transparent 50%);
+  pointer-events:none;
+}
+button:hover:not(:disabled){filter:brightness(1.1);}
+button:active:not(:disabled){transform:translate(3px,3px)!important;box-shadow:1px 1px 0 #000!important;}
+button:disabled{background:#333!important;color:#555!important;cursor:not-allowed;box-shadow:none!important;opacity:.6;}
+
+.btn-red{background:#c62828;color:#fff;}
+.btn-green{background:#00c020;color:#000;}
+.btn-yellow{background:var(--gold);color:#1a1a1a;}
+.btn-cyan{background:#0088cc;color:#fff;}
+.btn-gray{background:#2a2a2a;color:#888;border:2px solid #333;}
+
+/* === ERROR === */
+#error-msg,#error-msg2,#error-msg3,#error-msg4{
+  font-size: clamp(6px,1.5vw,7px);
+  color:#ff4500;
+  min-height:14px;
+  margin-bottom:8px;
+  letter-spacing:1px;
+}
+
+/* === BUTTON ROWS === */
+.btn-flex{display:flex;gap:10px;flex-wrap:wrap;}
+.btn-flex button{flex:1;min-width:120px;padding: clamp(12px,3vw,16px) 8px;}
+
+.btn-pair{display:flex;gap:8px;}
+.btn-pair button:first-child{flex:1;}
+
+/* === LOBBY DISPLAY === */
+#lobby-code-display{
+  font-size: clamp(22px,7vw,34px);
+  color:var(--green);
+  text-align:center;
+  letter-spacing: clamp(5px,2vw,10px);
+  border:3px solid var(--green);
+  padding: 12px 20px;
+  margin-bottom:12px;
+  background:#041204;
+  box-shadow:0 0 20px rgba(57,255,20,0.3), inset 0 0 20px rgba(57,255,20,0.05);
+}
+
+.lobby-hint{
+  font-size: clamp(5px,1.4vw,7px);
+  color:#555;
+  text-align:center;
+  margin-bottom:14px;
+  line-height:2;
+}
+
+#lobby-player-count{
+  font-size: clamp(6px,1.5vw,7px);
+  color:#666;
+  margin-bottom:10px;
+}
+
+/* === PLAYER PILLS === */
+.player-pill{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#0a0a0a;
+  border:2px solid #252525;
+  padding: 9px 13px;
+  margin-bottom:6px;
+  font-size: clamp(6px,1.5vw,7px);
+  color:#aaa;
+  transition:border-color .2s;
+}
+.player-pill.host-pill{border-color:var(--gold);color:var(--gold);}
+.player-pill.host-pill:hover{box-shadow:0 0 8px rgba(255,215,0,0.15);}
+
+.badge{
+  font-size: clamp(5px,1.2vw,6px);
+  background:var(--gold);
+  color:#000;
+  padding:2px 6px;
+  margin-left:6px;
+}
+.badge-alive{
+  font-size: clamp(5px,1.2vw,6px);
+  background:var(--green);
+  color:#000;
+  padding:2px 6px;
+  margin-left:6px;
+}
+
+/* === START BTN === */
+#start-btn{
+  width:100%;
+  font-size: clamp(8px,2.5vw,11px);
+  padding: clamp(13px,3vw,17px);
+  margin-top:6px;
+}
+
+/* === SCREENS === */
+.screen{display:none;width:100%;max-width: min(480px, calc(100vw - 20px));flex-direction:column;align-items:center;}
 .screen.active{display:flex;}
-#lobby-code-display{font-size:20px;color:#39ff14;text-align:center;letter-spacing:6px;
-  border:3px solid #39ff14;padding:10px 20px;margin-bottom:12px;background:#0a1a0a;
-  box-shadow:0 0 12px rgba(57,255,20,0.3);}
-.lobby-hint{font-size:6px;color:#888;text-align:center;margin-bottom:14px;}
-.player-pill{display:flex;align-items:center;justify-content:space-between;
-  background:#0a0a0a;border:2px solid #333;padding:8px 12px;margin-bottom:6px;font-size:7px;color:#ccc;}
-.player-pill.host-pill{border-color:#ffd700;color:#ffd700;}
-.badge{font-size:6px;background:#ffd700;color:#000;padding:2px 5px;margin-left:6px;}
-.badge-alive{font-size:6px;background:#39ff14;color:#000;padding:2px 5px;margin-left:6px;}
-#lobby-player-count{font-size:7px;color:#888;margin-bottom:10px;}
-#start-btn{width:100%;font-size:9px;padding:14px;margin-top:4px;}
-#max-players-select{background:#0a0a0a;border:3px solid #ffd700;color:#ffd700;
-  font-family:'Press Start 2P',monospace;font-size:9px;padding:10px;width:100%;outline:none;
-  margin-bottom:12px;cursor:pointer;}
-.editor-link{font-size:7px;color:#ffd700;text-shadow:2px 2px 0 #000;text-decoration:none;
-  padding:6px 12px;background:#1a1a1a;border:2px solid #ffd700;box-shadow:3px 3px 0 #000;
-  z-index:1;position:relative;display:inline-block;margin-top:8px;}
-.editor-link:hover{background:#333;}
+
+/* === SPINNER === */
+.spinner{
+  display:inline-block;
+  width:10px;height:10px;
+  border:2px solid rgba(255,215,0,.25);
+  border-top-color:var(--gold);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  vertical-align:middle;
+  margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* === EDITOR LINK === */
+.editor-link{
+  font-size: clamp(6px,1.5vw,8px);
+  color:var(--gold);
+  text-shadow:2px 2px 0 #000;
+  text-decoration:none;
+  padding: 8px 14px;
+  background:var(--card);
+  border:2px solid var(--gold);
+  box-shadow:3px 3px 0 #000;
+  z-index:1;
+  position:relative;
+  display:inline-block;
+  margin-top:10px;
+  transition:background .15s;
+}
+.editor-link:hover{background:#222;}
+
+/* === LABEL === */
+.field-label{
+  font-size: clamp(6px,1.5vw,7px);
+  color:#666;
+  display:block;
+  margin-bottom:6px;
+  letter-spacing:1px;
+}
+
+/* === RESPONSIVE TWEAKS === */
+@media(max-width:360px){
+  .btn-flex{flex-direction:column;}
+  .btn-flex button{min-width:unset;}
+}
 </style>
 </head>
 <body>
 
-<div class="coin-row">
-  <div class="coin"></div><div class="coin"></div>
-  <div class="coin"></div><div class="coin"></div>
+<div class="title-wrap">
+  <div class="coin-row">
+    <div class="coin"></div>
+    <div class="coin"></div>
+    <div class="coin"></div>
+    <div class="coin"></div>
+    <div class="coin"></div>
+  </div>
+  <h1>VORTEX ISLANDS</h1>
+  <p class="subtitle">▓ SUPER PIXEL EDITION ▓</p>
 </div>
-<h1>VORTEX ISLANDS</h1>
-<p class="subtitle">▓ SUPER PIXEL EDITION ▓</p>
+
 <div id="status-bar">⚡ READY</div>
 
 <!-- SCREEN 1: Register -->
 <div class="screen active" id="screen-register">
-  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+  <div class="card">
     <div class="card-title">🎮 ENTER YOUR NAME</div>
     <div id="error-msg"></div>
-    <input type="text" id="username-input" placeholder="YOUR NAME" maxlength="14"/>
-    <button class="btn-red" id="register-btn" style="width:100%">ENTER ARENA!</button>
+    <input type="text" id="username-input" placeholder="YOUR NAME" maxlength="14" autocomplete="off"/>
+    <button class="btn-red" id="register-btn" style="width:100%;font-size:clamp(8px,2.5vw,10px);padding:14px;">ENTER ARENA!</button>
   </div>
 </div>
 
 <!-- SCREEN 2: Host or Join -->
 <div class="screen" id="screen-menu">
-  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+  <div class="card">
     <div class="card-title">👾 WHAT DO YOU WANT TO DO?</div>
     <div id="error-msg2"></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-      <button class="btn-green" id="host-btn" style="flex:1;min-width:120px;padding:14px 8px;">
-        🏠 HOST GAME
-      </button>
-      <button class="btn-cyan" id="join-btn" style="flex:1;min-width:120px;padding:14px 8px;">
-        🚪 JOIN LOBBY
-      </button>
+    <div class="btn-flex">
+      <button class="btn-green" id="host-btn">🏠 HOST GAME</button>
+      <button class="btn-cyan" id="join-btn">🚪 JOIN LOBBY</button>
     </div>
   </div>
 </div>
 
 <!-- SCREEN 3a: Create Lobby -->
 <div class="screen" id="screen-create">
-  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+  <div class="card">
     <div class="card-title">🏠 CREATE LOBBY</div>
     <div id="error-msg3"></div>
-    <label style="font-size:7px;color:#aaa;display:block;margin-bottom:6px;">MAX PLAYERS</label>
+    <label class="field-label">MAX PLAYERS</label>
     <select id="max-players-select">
       <option value="2">2 PLAYERS</option>
       <option value="3">3 PLAYERS</option>
@@ -120,8 +413,8 @@ button:disabled{background:#444!important;color:#777!important;cursor:not-allowe
       <option value="5">5 PLAYERS</option>
       <option value="6" selected>6 PLAYERS</option>
     </select>
-    <div style="display:flex;gap:8px;">
-      <button class="btn-yellow" id="create-lobby-btn" style="flex:1;">CREATE!</button>
+    <div class="btn-pair">
+      <button class="btn-yellow" id="create-lobby-btn">CREATE!</button>
       <button class="btn-gray" onclick="showScreen('screen-menu')">← BACK</button>
     </div>
   </div>
@@ -129,12 +422,13 @@ button:disabled{background:#444!important;color:#777!important;cursor:not-allowe
 
 <!-- SCREEN 3b: Join Lobby -->
 <div class="screen" id="screen-join">
-  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+  <div class="card">
     <div class="card-title">🚪 JOIN LOBBY</div>
     <div id="error-msg4"></div>
-    <input type="text" id="lobby-code-input" placeholder="ENTER LOBBY CODE" maxlength="5" style="text-transform:uppercase;letter-spacing:4px;"/>
-    <div style="display:flex;gap:8px;">
-      <button class="btn-cyan" id="join-lobby-btn" style="flex:1;">JOIN!</button>
+    <input type="text" id="lobby-code-input" placeholder="LOBBY CODE" maxlength="5"
+      style="text-transform:uppercase;letter-spacing:6px;text-align:center;" autocomplete="off"/>
+    <div class="btn-pair">
+      <button class="btn-cyan" id="join-lobby-btn">JOIN!</button>
       <button class="btn-gray" onclick="showScreen('screen-menu')">← BACK</button>
     </div>
   </div>
@@ -142,11 +436,11 @@ button:disabled{background:#444!important;color:#777!important;cursor:not-allowe
 
 <!-- SCREEN 4: Lobby Room -->
 <div class="screen" id="screen-lobby">
-  <div class="card" style="width:100%;max-width:480px;z-index:1;">
+  <div class="card">
     <div class="card-title">🏝 LOBBY</div>
-    <div style="text-align:center;font-size:7px;color:#888;margin-bottom:6px;">SHARE THIS CODE WITH FRIENDS:</div>
+    <div style="text-align:center;font-size:clamp(5px,1.5vw,7px);color:#555;margin-bottom:6px;letter-spacing:1px;">SHARE THIS CODE WITH FRIENDS:</div>
     <div id="lobby-code-display">-----</div>
-    <div class="lobby-hint">Friends go to the game and click JOIN LOBBY</div>
+    <div class="lobby-hint">Friends join via VORTEX ISLANDS → JOIN LOBBY</div>
     <div id="lobby-player-count">PLAYERS: 0 / 0</div>
     <div id="lobby-players-list"></div>
     <button class="btn-green" id="start-btn" disabled>⚔ START BATTLE!</button>
@@ -158,7 +452,6 @@ button:disabled{background:#444!important;color:#777!important;cursor:not-allowe
 
 <script>
 let myUsername = null, currentLobby = null, lobbyPollInterval = null;
-
 const API = '/api/game';
 
 async function api(action, body) {
@@ -185,6 +478,12 @@ function showError(id, txt) {
   if (el) { el.textContent = txt; setTimeout(() => { el.textContent = ''; }, 3500); }
 }
 
+function setStatus(msg, isErr) {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.className = isErr ? 'err' : '';
+}
+
 function renderLobbyPlayers(lobby) {
   currentLobby = lobby;
   document.getElementById('lobby-code-display').textContent = lobby.code;
@@ -195,7 +494,9 @@ function renderLobbyPlayers(lobby) {
   list.innerHTML = lobby.players.map(u => `
     <div class="player-pill ${u === lobby.host ? 'host-pill' : ''}">
       <span>🧑 ${u}</span>
-      ${u === lobby.host ? '<span class="badge">HOST</span>' : '<span class="badge-alive">READY</span>'}
+      ${u === lobby.host
+        ? '<span class="badge">HOST</span>'
+        : '<span class="badge-alive">READY</span>'}
     </div>`).join('');
 
   const startBtn = document.getElementById('start-btn');
@@ -210,7 +511,6 @@ function renderLobbyPlayers(lobby) {
   }
 }
 
-// Poll lobby state for non-host players (so they see updates & detect game start)
 function startLobbyPolling(code) {
   stopLobbyPolling();
   lobbyPollInterval = setInterval(async () => {
@@ -218,19 +518,15 @@ function startLobbyPolling(code) {
       const data = await fetch(`${API}?action=lobby&code=${code}`).then(r => r.json());
       if (data.error) { stopLobbyPolling(); return; }
       const lobby = data.lobby;
-
-      // Detect game started — host will redirect, guests need polling to catch it
       if (lobby.status === 'in_game') {
         stopLobbyPolling();
-        // Guest needs to poll for their gameId — it was set when host started
-        // We store it in the lobby after creation
         if (lobby.gameId) {
           location.href = `game.html?gameId=${lobby.gameId}&username=${encodeURIComponent(myUsername)}`;
         }
         return;
       }
       renderLobbyPlayers(lobby);
-    } catch (e) { /* ignore transient errors */ }
+    } catch (e) {}
   }, 1500);
 }
 
@@ -242,9 +538,11 @@ function stopLobbyPolling() {
 document.getElementById('register-btn').onclick = async () => {
   const name = document.getElementById('username-input').value.trim();
   if (!name) return showError('error-msg', 'ENTER YOUR NAME!');
+  setStatus('⚡ CONNECTING...');
   const data = await api('register', { username: name });
-  if (data.error) return showError('error-msg', data.error);
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg', data.error); }
   myUsername = data.username;
+  setStatus(`⚡ WELCOME, ${myUsername}!`);
   showScreen('screen-menu');
 };
 document.getElementById('username-input').addEventListener('keydown', e => {
@@ -255,9 +553,11 @@ document.getElementById('username-input').addEventListener('keydown', e => {
 document.getElementById('host-btn').onclick = () => showScreen('screen-create');
 document.getElementById('create-lobby-btn').onclick = async () => {
   const max = parseInt(document.getElementById('max-players-select').value) || 6;
+  setStatus('⚡ CREATING LOBBY...');
   const data = await api('create_lobby', { username: myUsername, maxPlayers: max });
-  if (data.error) return showError('error-msg3', data.error);
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg3', data.error); }
   renderLobbyPlayers(data.lobby);
+  setStatus(`⚡ LOBBY CREATED — CODE: ${data.lobby.code}`);
   showScreen('screen-lobby');
   startLobbyPolling(data.lobby.code);
 };
@@ -267,9 +567,11 @@ document.getElementById('join-btn').onclick = () => showScreen('screen-join');
 document.getElementById('join-lobby-btn').onclick = async () => {
   const code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
   if (code.length < 4) return showError('error-msg4', 'ENTER A VALID CODE');
+  setStatus('⚡ JOINING...');
   const data = await api('join_lobby', { username: myUsername, code });
-  if (data.error) return showError('error-msg4', data.error);
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg4', data.error); }
   renderLobbyPlayers(data.lobby);
+  setStatus('⚡ JOINED LOBBY!');
   showScreen('screen-lobby');
   startLobbyPolling(code);
 };
@@ -280,11 +582,10 @@ document.getElementById('lobby-code-input').addEventListener('keydown', e => {
 // Start game (host only)
 document.getElementById('start-btn').onclick = async () => {
   if (!currentLobby) return;
+  setStatus('⚡ STARTING BATTLE...');
   const data = await api('start_game', { username: myUsername, code: currentLobby.code });
-  if (data.error) return showError('error-msg2', data.error);
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg2', data.error); }
   stopLobbyPolling();
-  // Save gameId so polling guests can find it
-  // Navigate host directly
   location.href = `game.html?gameId=${data.gameId}&username=${encodeURIComponent(myUsername)}`;
 };
 
@@ -293,6 +594,7 @@ document.getElementById('leave-lobby-btn').onclick = async () => {
   if (currentLobby) await api('leave_lobby', { username: myUsername, code: currentLobby.code });
   stopLobbyPolling();
   currentLobby = null;
+  setStatus('⚡ READY');
   showScreen('screen-menu');
 };
 </script>
