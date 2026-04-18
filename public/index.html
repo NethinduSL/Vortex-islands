@@ -2,414 +2,216 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>VORTEX ISLANDS</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --gold:#ffd700;--gold2:#ffec80;
-  --green:#39ff14;--red:#e53935;--cyan:#00e5ff;
-  --dark:#05070f;--card:rgba(6,9,20,0.92);
-  --glow-gold:0 0 20px rgba(255,215,0,0.35);
-  --glow-green:0 0 16px rgba(57,255,20,0.3);
-  --glow-cyan:0 0 16px rgba(0,229,255,0.3);
-  --font:'Press Start 2P',monospace;
+  --sky:#3a8efc;--sky2:#1a5fd4;--gold:#ffd700;--green:#39ff14;
+  --red:#e53935;--cyan:#00c8ff;--dark:#0d0d0d;--card:#141414;
+  --border:4px solid var(--gold);
 }
 html,body{min-height:100%;width:100%;overflow-x:hidden;}
 body{
-  background:var(--dark);
+  background:var(--sky);
   background-image:
-    radial-gradient(ellipse 160% 60% at 50% 0%,#1a3d8a 0%,transparent 50%),
-    radial-gradient(circle 400px at 85% 10%,rgba(255,215,0,0.06) 0%,transparent 60%),
-    radial-gradient(circle 300px at 5% 30%,rgba(0,229,255,0.04) 0%,transparent 55%),
-    repeating-linear-gradient(0deg,transparent,transparent 80px,rgba(255,255,255,0.008) 81px),
-    repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(255,255,255,0.005) 81px);
-  font-family:var(--font);
+    radial-gradient(circle 180px at 85% 12%,rgba(255,235,100,0.35) 0%,transparent 70%),
+    radial-gradient(ellipse 140px 55px at 12% 18%,#fff 0%,#f0f8ff 55%,transparent 72%),
+    radial-gradient(ellipse 90px 38px at 22% 24%,#fff 0%,transparent 70%),
+    radial-gradient(ellipse 120px 48px at 55% 10%,#fff 0%,#eaf4ff 50%,transparent 68%),
+    radial-gradient(ellipse 70px 28px at 65% 16%,#fff 0%,transparent 65%),
+    radial-gradient(ellipse 100px 40px at 90% 28%,#fff 0%,#edf7ff 55%,transparent 70%),
+    linear-gradient(180deg,#1a5fd4 0%,#3a8efc 45%,#6abaff 100%);
+  font-family:'Press Start 2P',monospace;
   display:flex;flex-direction:column;align-items:center;
-  padding:0 0 90px;color:#b0c0e8;
-  position:relative;min-height:100vh;
+  padding:clamp(16px,4vw,36px) clamp(10px,3vw,20px) 80px;
+  color:#1a1a1a;position:relative;
 }
-
-/* ── GROUND ── */
 body::after{
   content:'';position:fixed;bottom:0;left:0;right:0;
-  height:clamp(26px,4vw,42px);
-  background:
-    repeating-linear-gradient(90deg,
-      #2a7a18 0,#2a7a18 22px,#1e6010 22px,#1e6010 44px,
-      #34921e 44px,#34921e 66px,#1e6010 66px,#1e6010 88px);
-  border-top:3px solid #123e08;
-  box-shadow:0 -3px 0 #0a2a04,0 -7px 10px rgba(0,0,0,0.4);
-  z-index:0;
+  height:clamp(30px,5vh,48px);
+  background:repeating-linear-gradient(90deg,#4caf50 0px,#4caf50 18px,#388e3c 18px,#388e3c 36px,#43a047 36px,#43a047 54px);
+  border-top:4px solid #2e7d32;box-shadow:0 -4px 0 #1b5e20;z-index:0;
 }
-
-/* ── ANIMATED CLOUDS ── */
-.sky-clouds{position:fixed;top:0;left:0;right:0;height:35vh;pointer-events:none;z-index:0;overflow:hidden;}
-.cloud{position:absolute;height:18px;border-radius:50px;animation:cloud-drift linear infinite;}
-.cloud::before,.cloud::after{content:'';position:absolute;border-radius:50px;background:inherit;}
-.c1{width:90px;background:rgba(255,255,255,0.05);top:8%;left:-100px;animation-duration:38s;}
-.c2{width:60px;background:rgba(255,255,255,0.04);top:16%;left:-80px;animation-duration:26s;animation-delay:-12s;}
-.c3{width:120px;background:rgba(255,255,255,0.04);top:5%;left:-130px;animation-duration:50s;animation-delay:-25s;}
-.c4{width:50px;background:rgba(255,255,255,0.03);top:22%;left:-60px;animation-duration:32s;animation-delay:-8s;}
-@keyframes cloud-drift{to{transform:translateX(calc(100vw + 200px));}}
-
-/* ── HEADER ── */
-.header-wrap{
-  position:relative;z-index:1;text-align:center;
-  padding:clamp(22px,5vh,44px) 16px clamp(8px,2vh,16px);width:100%;
-}
-.coin-row{
-  display:flex;gap:clamp(8px,2.5vw,14px);justify-content:center;
-  margin-bottom:clamp(8px,2vh,14px);position:relative;z-index:2;
-}
+.title-wrap{position:relative;z-index:1;text-align:center;margin-bottom:clamp(12px,3vh,22px);}
+.coin-row{display:flex;gap:clamp(6px,2vw,12px);justify-content:center;margin-bottom:clamp(8px,2vh,14px);z-index:1;position:relative;}
 .coin{
-  width:clamp(18px,5vw,28px);height:clamp(18px,5vw,28px);
-  background:radial-gradient(circle at 35% 30%,#fff5a0,#ffd700 45%,#b8820a);
-  box-shadow:2px 2px 0 #7a5a00,inset 0 -2px 0 rgba(0,0,0,0.3),0 0 12px rgba(255,215,0,0.4);
-  border-radius:50%;animation:coin-bob .9s ease-in-out infinite alternate;
-  display:flex;align-items:center;justify-content:center;
-  font-size:clamp(5px,1.4vw,9px);color:#8b5e00;font-weight:bold;
+  width:clamp(16px,4vw,24px);height:clamp(16px,4vw,24px);
+  background:radial-gradient(circle at 35% 35%,#ffe680,#ffd700 50%,#c8a800);
+  box-shadow:2px 2px 0 #8b6914,inset -2px -2px 0 rgba(0,0,0,0.2);
+  border-radius:50%;animation:bob .9s ease-in-out infinite alternate;
 }
-.coin:nth-child(2){animation-delay:.15s}.coin:nth-child(3){animation-delay:.3s}
-.coin:nth-child(4){animation-delay:.45s}.coin:nth-child(5){animation-delay:.6s}
-@keyframes coin-bob{to{transform:translateY(-7px);}}
-
+.coin:nth-child(2){animation-delay:.18s}.coin:nth-child(3){animation-delay:.36s}
+.coin:nth-child(4){animation-delay:.54s}.coin:nth-child(5){animation-delay:.72s}
+@keyframes bob{to{transform:translateY(-5px)}}
 h1{
-  font-family:'Orbitron',var(--font);font-weight:900;
-  font-size:clamp(20px,8vw,54px);
-  color:#fff;line-height:1.1;letter-spacing:clamp(2px,1vw,6px);
-  text-shadow:
-    4px 4px 0 #6a3000,
-    -1px -1px 0 #5a2a00,
-    0 0 50px rgba(255,200,0,0.7),
-    0 0 90px rgba(255,150,0,0.3);
-  animation:logo-pulse 3s ease-in-out infinite alternate;
-  position:relative;z-index:2;
+  font-size:clamp(16px,5.5vw,30px);color:#fff;
+  text-shadow:3px 3px 0 #7a3a10,-2px -2px 0 #7a3a10,2px -2px 0 #7a3a10,-2px 2px 0 #7a3a10,0 0 30px rgba(255,215,0,0.5);
+  letter-spacing:clamp(2px,1vw,5px);margin-bottom:6px;
 }
-@keyframes logo-pulse{
-  0%{text-shadow:4px 4px 0 #6a3000,-1px -1px 0 #5a2a00,0 0 50px rgba(255,200,0,0.7);}
-  100%{text-shadow:4px 4px 0 #6a3000,-1px -1px 0 #5a2a00,0 0 70px rgba(255,200,0,1),0 0 120px rgba(255,150,0,0.5);}
-}
-.subtitle{
-  font-size:clamp(5px,1.8vw,9px);color:var(--gold);
-  text-shadow:2px 2px 0 rgba(0,0,0,0.5);
-  letter-spacing:clamp(2px,0.8vw,5px);margin-top:8px;position:relative;z-index:2;
-}
-.edition-badge{
-  display:inline-block;margin-top:10px;
-  font-size:clamp(4px,1.2vw,7px);
-  background:linear-gradient(135deg,#e65000,#cc2200);
-  color:#fff;padding:4px 10px;letter-spacing:2px;
-  box-shadow:2px 2px 0 rgba(0,0,0,0.6);
-  animation:blink-badge 1.5s step-end infinite;position:relative;z-index:2;
-}
-@keyframes blink-badge{50%{opacity:0;}}
-
-/* Mini island art */
-.island-row{
-  display:flex;gap:clamp(8px,2.5vw,16px);justify-content:center;
-  margin:clamp(8px,2.5vh,16px) 0;position:relative;z-index:2;
-}
-.mini-isle{
-  position:relative;
-  width:clamp(44px,12vw,72px);height:clamp(22px,6vw,36px);
-  animation:isle-bob 2.5s ease-in-out infinite alternate;
-}
-.mini-isle:nth-child(2){animation-delay:.5s;width:clamp(56px,15vw,90px);}
-.mini-isle:nth-child(3){animation-delay:1s;}
-@keyframes isle-bob{to{transform:translateY(-4px);}}
-.mini-isle canvas{image-rendering:pixelated;display:block;}
-
-/* ── STATUS ── */
+.subtitle{font-size:clamp(5px,1.5vw,8px);color:#ffd700;text-shadow:2px 2px 0 #7a3a10;letter-spacing:3px;}
 #status-bar{
-  font-size:clamp(6px,1.8vw,8px);color:var(--green);
-  margin-bottom:12px;min-height:18px;z-index:1;position:relative;
-  text-shadow:var(--glow-green);letter-spacing:1px;
-  padding:0 16px;text-align:center;
+  font-size:clamp(6px,1.8vw,8px);color:var(--green);margin-bottom:8px;
+  min-height:18px;z-index:1;position:relative;
+  text-shadow:0 0 8px var(--green);letter-spacing:1px;
 }
-#status-bar.err{color:var(--red);text-shadow:0 0 8px rgba(229,57,53,0.5);}
-
-/* ── CARD ── */
+#status-bar.err{color:#ff1744;text-shadow:0 0 8px #ff1744;}
 .card{
-  background:var(--card);
-  border:2px solid rgba(255,215,0,0.6);
-  box-shadow:5px 5px 0 rgba(0,0,0,0.7),var(--glow-gold);
-  padding:clamp(14px,3.5vw,24px);
-  width:100%;max-width:min(500px,calc(100vw - 24px));
-  margin-bottom:14px;position:relative;z-index:1;
-  backdrop-filter:blur(12px);
+  background:var(--card);border:3px solid var(--gold);
+  box-shadow:5px 5px 0 #000,9px 9px 0 #7a5a00,0 0 20px rgba(255,215,0,0.08);
+  padding:clamp(14px,3vw,22px);width:100%;
+  max-width:min(480px,calc(100vw - 20px));margin-bottom:12px;
+  position:relative;z-index:1;
 }
-.card::before{
-  content:'';position:absolute;inset:5px;
-  border:1px solid rgba(255,215,0,0.08);pointer-events:none;
-}
-.card::after{
-  content:'';position:absolute;top:8px;right:8px;
-  width:8px;height:8px;
-  border-top:2px solid rgba(255,215,0,0.4);
-  border-right:2px solid rgba(255,215,0,0.4);
-}
-.card-title{
-  font-size:clamp(7px,2.2vw,11px);color:var(--gold);
-  margin-bottom:16px;letter-spacing:2px;
-  display:flex;align-items:center;gap:8px;
-  text-shadow:var(--glow-gold);
-}
-.card-title::before{content:'▸';color:var(--green);font-size:0.75em;}
-
-/* ── INPUTS ── */
+.card::before{content:'';position:absolute;inset:3px;border:1px solid rgba(255,215,0,0.08);pointer-events:none;}
+.card-title{font-size:clamp(7px,2vw,10px);color:var(--gold);margin-bottom:14px;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
 input[type="text"],input[type="number"]{
-  background:rgba(0,2,14,0.8);
-  border:2px solid rgba(255,215,0,0.3);
-  color:#fff;font-family:var(--font);
-  font-size:clamp(8px,2.5vw,11px);
-  padding:clamp(12px,3vw,15px);width:100%;outline:none;
-  margin-bottom:12px;transition:border-color .2s,box-shadow .2s;
+  background:#080808;border:3px solid var(--gold);color:#fff;
+  font-family:'Press Start 2P',monospace;font-size:clamp(8px,2.2vw,10px);
+  padding:clamp(10px,2.5vw,13px);width:100%;outline:none;margin-bottom:10px;
+  transition:border-color .15s,box-shadow .15s;
 }
-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(57,255,20,0.12);}
-input::placeholder{color:#2a334a;}
+input:focus{border-color:var(--green);box-shadow:0 0 12px rgba(57,255,20,0.2);}
+input::placeholder{color:#444;}
 select{
-  background:rgba(0,2,14,0.8);
-  border:2px solid rgba(255,215,0,0.3);
-  color:var(--gold);font-family:var(--font);
-  font-size:clamp(7px,2vw,9px);
-  padding:clamp(11px,2.8vw,14px);width:100%;outline:none;
-  margin-bottom:14px;cursor:pointer;appearance:none;-webkit-appearance:none;
+  background:#080808;border:3px solid var(--gold);color:var(--gold);
+  font-family:'Press Start 2P',monospace;font-size:clamp(8px,2.2vw,10px);
+  padding:clamp(10px,2.5vw,13px);width:100%;outline:none;margin-bottom:12px;
+  cursor:pointer;appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%23ffd700'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;
-  transition:border-color .2s;
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
 }
 select:focus{border-color:var(--green);}
-
-/* ── BUTTONS ── */
 button{
-  font-family:var(--font);font-size:clamp(7px,2vw,9px);cursor:pointer;border:none;
-  padding:clamp(12px,3vw,15px) clamp(14px,3.5vw,20px);
-  box-shadow:4px 4px 0 rgba(0,0,0,0.7);
-  text-transform:uppercase;letter-spacing:1px;
-  transition:transform .06s,box-shadow .06s,filter .12s;
-  position:relative;overflow:hidden;
+  font-family:'Press Start 2P',monospace;font-size:clamp(7px,2vw,9px);cursor:pointer;
+  border:none;padding:clamp(10px,2.5vw,13px) clamp(12px,3vw,18px);
+  box-shadow:4px 4px 0 #000;text-transform:uppercase;letter-spacing:1px;
+  transition:transform .06s,box-shadow .06s;position:relative;overflow:hidden;
 }
-button::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,0.1) 0%,transparent 50%);pointer-events:none;}
-button:hover:not(:disabled){filter:brightness(1.15);}
-button:active:not(:disabled){transform:translate(3px,3px)!important;box-shadow:1px 1px 0 rgba(0,0,0,0.7)!important;}
-button:disabled{background:#1a1a28!important;color:#333!important;cursor:not-allowed;box-shadow:none!important;opacity:.5;}
-.btn-red{background:linear-gradient(180deg,#c62828,#8b0000);color:#fff;border-bottom:3px solid #5a0000;}
-.btn-green{background:linear-gradient(180deg,#1b6b1b,#0d4a0d);color:var(--green);border-bottom:3px solid #063606;text-shadow:0 0 8px rgba(57,255,20,0.4);}
-.btn-yellow{background:linear-gradient(180deg,#e09000,#bf6c00);color:#0a0500;border-bottom:3px solid #7a4000;}
-.btn-cyan{background:linear-gradient(180deg,#006080,#003a50);color:#00e5ff;border-bottom:3px solid #001e28;text-shadow:0 0 6px rgba(0,229,255,0.3);}
-.btn-gray{background:#0e0f1a;color:#445;border:2px solid #1a1b2a;}
-
-#error-msg,#error-msg2,#error-msg3,#error-msg4{font-size:clamp(6px,1.5vw,7px);color:#ff4500;min-height:14px;margin-bottom:10px;letter-spacing:1px;line-height:1.8;padding:0 2px;}
+button::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,0.07) 0%,transparent 50%);pointer-events:none;}
+button:hover:not(:disabled){filter:brightness(1.1);}
+button:active:not(:disabled){transform:translate(3px,3px)!important;box-shadow:1px 1px 0 #000!important;}
+button:disabled{background:#333!important;color:#555!important;cursor:not-allowed;box-shadow:none!important;opacity:.6;}
+.btn-red{background:#c62828;color:#fff;}
+.btn-green{background:#00c020;color:#000;}
+.btn-yellow{background:var(--gold);color:#1a1a1a;}
+.btn-cyan{background:#0088cc;color:#fff;}
+.btn-gray{background:#2a2a2a;color:#888;border:2px solid #333;}
+#error-msg,#error-msg2,#error-msg3,#error-msg4{font-size:clamp(6px,1.5vw,7px);color:#ff4500;min-height:14px;margin-bottom:8px;letter-spacing:1px;}
 .btn-flex{display:flex;gap:10px;flex-wrap:wrap;}
-.btn-flex button{flex:1;min-width:120px;padding:clamp(13px,3.2vw,17px) 8px;}
+.btn-flex button{flex:1;min-width:120px;padding:clamp(12px,3vw,16px) 8px;}
 .btn-pair{display:flex;gap:8px;}
 .btn-pair button:first-child{flex:1;}
-
-/* ── LOBBY CODE ── */
 #lobby-code-display{
-  font-family:'Orbitron',var(--font);
-  font-size:clamp(22px,8vw,42px);color:var(--green);text-align:center;
-  letter-spacing:clamp(6px,3vw,16px);
-  border:2px solid rgba(57,255,20,0.5);
-  padding:14px 20px;margin-bottom:14px;
-  background:rgba(0,15,0,0.6);
-  box-shadow:0 0 30px rgba(57,255,20,0.15),inset 0 0 20px rgba(57,255,20,0.04);
-  text-shadow:var(--glow-green);
+  font-size:clamp(22px,7vw,34px);color:var(--green);text-align:center;
+  letter-spacing:clamp(5px,2vw,10px);border:3px solid var(--green);
+  padding:12px 20px;margin-bottom:12px;background:#041204;
+  box-shadow:0 0 20px rgba(57,255,20,0.3),inset 0 0 20px rgba(57,255,20,0.05);
 }
-.lobby-hint{font-size:clamp(5px,1.4vw,7px);color:#334;text-align:center;margin-bottom:14px;line-height:2;}
-#lobby-player-count{font-size:clamp(6px,1.5vw,7px);color:#445;margin-bottom:10px;}
+.lobby-hint{font-size:clamp(5px,1.4vw,7px);color:#555;text-align:center;margin-bottom:14px;line-height:2;}
+#lobby-player-count{font-size:clamp(6px,1.5vw,7px);color:#666;margin-bottom:10px;}
 .player-pill{
   display:flex;align-items:center;justify-content:space-between;
-  background:rgba(6,8,18,0.8);border:2px solid rgba(255,215,0,0.1);
-  padding:10px 14px;margin-bottom:6px;
-  font-size:clamp(6px,1.5vw,7px);color:#6a7898;
-  transition:border-color .2s;
+  background:#0a0a0a;border:2px solid #252525;padding:9px 13px;
+  margin-bottom:6px;font-size:clamp(6px,1.5vw,7px);color:#aaa;transition:border-color .2s;
 }
-.player-pill:hover{border-color:rgba(255,215,0,0.25);}
-.player-pill.host-pill{border-color:rgba(255,215,0,0.5);color:var(--gold);background:rgba(18,12,0,0.8);}
-.badge{font-size:clamp(5px,1.2vw,6px);background:var(--gold);color:#000;padding:2px 7px;margin-left:6px;font-weight:bold;}
-.badge-alive{font-size:clamp(5px,1.2vw,6px);background:var(--green);color:#000;padding:2px 7px;margin-left:6px;}
-.badge-bot{font-size:clamp(5px,1.2vw,6px);background:#005580;color:#00aadd;padding:2px 7px;margin-left:6px;}
-.player-pill.bot-pill{border-color:rgba(0,120,180,0.25);color:#0099cc;}
-.btn-rm-bot{font-family:var(--font);font-size:5px;background:transparent;border:1px solid #222;color:#444;padding:3px 6px;cursor:pointer;box-shadow:none;margin-left:6px;transition:all .1s;}
-.btn-rm-bot:hover{color:var(--red);border-color:var(--red);transform:none!important;box-shadow:none!important;}
-#start-btn{width:100%;font-size:clamp(8px,2.5vw,11px);padding:clamp(14px,3.5vw,18px);margin-top:8px;}
-.screen{display:none;width:100%;max-width:min(500px,calc(100vw - 24px));flex-direction:column;align-items:center;}
+.player-pill.host-pill{border-color:var(--gold);color:var(--gold);}
+.player-pill.host-pill:hover{box-shadow:0 0 8px rgba(255,215,0,0.15);}
+.badge{font-size:clamp(5px,1.2vw,6px);background:var(--gold);color:#000;padding:2px 6px;margin-left:6px;}
+.badge-alive{font-size:clamp(5px,1.2vw,6px);background:var(--green);color:#000;padding:2px 6px;margin-left:6px;}
+.badge-bot{font-size:clamp(5px,1.2vw,6px);background:#0088cc;color:#fff;padding:2px 6px;margin-left:6px;}
+.player-pill.bot-pill{border-color:#0088cc44;color:#00c8ff;}
+.btn-rm-bot{font-family:'Press Start 2P',monospace;font-size:5px;background:transparent;border:1px solid #333;color:#555;padding:2px 5px;cursor:pointer;box-shadow:none;margin-left:6px;}
+#start-btn{width:100%;font-size:clamp(8px,2.5vw,11px);padding:clamp(13px,3vw,17px);margin-top:6px;}
+.screen{display:none;width:100%;max-width:min(480px,calc(100vw - 20px));flex-direction:column;align-items:center;}
 .screen.active{display:flex;}
-.spinner{display:inline-block;width:10px;height:10px;border:2px solid rgba(255,215,0,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid rgba(255,215,0,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .editor-link{
-  font-size:clamp(6px,1.5vw,8px);color:var(--gold);text-decoration:none;
-  padding:10px 16px;background:var(--card);
-  border:2px solid rgba(255,215,0,0.3);box-shadow:3px 3px 0 rgba(0,0,0,0.5);
-  z-index:1;position:relative;display:inline-block;margin-top:12px;
-  transition:background .15s,border-color .2s;letter-spacing:1px;
+  font-size:clamp(6px,1.5vw,8px);color:var(--gold);text-shadow:2px 2px 0 #000;text-decoration:none;
+  padding:8px 14px;background:var(--card);border:2px solid var(--gold);box-shadow:3px 3px 0 #000;
+  z-index:1;position:relative;display:inline-block;margin-top:10px;transition:background .15s;
 }
-.editor-link:hover{background:rgba(18,12,0,0.9);border-color:var(--gold);}
-.field-label{font-size:clamp(6px,1.5vw,7px);color:#445;display:block;margin-bottom:7px;letter-spacing:1px;}
+.editor-link:hover{background:#222;}
+.field-label{font-size:clamp(6px,1.5vw,7px);color:#666;display:block;margin-bottom:6px;letter-spacing:1px;}
+@media(max-width:360px){.btn-flex{flex-direction:column;}.btn-flex button{min-width:unset;}}
 
-/* Public lobbies */
+/* ── PUBLIC LOBBY LIST ── */
 #public-lobbies-section{
-  width:100%;max-width:min(500px,calc(100vw - 24px));
-  position:relative;z-index:1;margin-bottom:14px;display:none;
+  width:100%;max-width:min(480px,calc(100vw - 20px));
+  position:relative;z-index:1;
+  margin-bottom:12px;
+  display:none;
 }
 .lobby-list-title{
   font-size:clamp(6px,1.6vw,8px);color:var(--gold);margin-bottom:10px;
   letter-spacing:2px;display:flex;align-items:center;gap:8px;
 }
-.lobby-list-empty{font-size:clamp(5px,1.3vw,7px);color:#2a3040;text-align:center;padding:18px;border:1px solid rgba(255,215,0,0.08);}
+.lobby-list-empty{font-size:clamp(5px,1.3vw,7px);color:#444;text-align:center;padding:14px;border:1px solid #1a1a1a;}
 .lobby-row{
   display:flex;align-items:center;justify-content:space-between;
-  background:rgba(4,6,16,0.8);border:2px solid rgba(255,215,0,0.08);
-  padding:10px 14px;margin-bottom:6px;cursor:pointer;
-  transition:border-color .15s,background .15s;font-size:clamp(5px,1.4vw,7px);
+  background:#080808;border:2px solid #1e1e1e;padding:9px 12px;
+  margin-bottom:6px;cursor:pointer;transition:border-color .15s,background .15s;
+  font-size:clamp(5px,1.4vw,7px);
 }
-.lobby-row:hover{border-color:var(--cyan);background:rgba(0,16,32,0.8);}
-.lobby-row-host{color:var(--cyan);margin-bottom:3px;text-shadow:0 0 8px rgba(0,229,255,0.2);}
-.lobby-row-info{color:#2a3040;font-size:clamp(4px,1.2vw,6px);}
+.lobby-row:hover{border-color:var(--cyan);background:#0a1a2a;}
+.lobby-row-host{color:var(--cyan);margin-bottom:3px;}
+.lobby-row-info{color:#555;font-size:clamp(4px,1.2vw,6px);}
 .lobby-row-join{
-  font-family:var(--font);font-size:clamp(5px,1.2vw,6px);
-  background:linear-gradient(180deg,#004c66,#002e40);color:#00e5ff;
-  border:none;padding:7px 12px;box-shadow:2px 2px 0 rgba(0,0,0,0.5);
-  cursor:pointer;letter-spacing:1px;flex-shrink:0;margin-left:10px;transition:filter .1s;
+  font-family:'Press Start 2P',monospace;font-size:clamp(5px,1.2vw,6px);
+  background:#005a99;color:#fff;border:none;padding:6px 10px;
+  box-shadow:2px 2px 0 #000;cursor:pointer;letter-spacing:1px;
+  flex-shrink:0;margin-left:10px;
 }
 .lobby-row-join:hover{filter:brightness(1.2);}
-.privacy-badge-public{font-size:clamp(4px,1.1vw,6px);background:rgba(0,40,0,0.8);color:var(--green);padding:2px 7px;margin-left:6px;border:1px solid rgba(57,255,20,0.25);}
-.privacy-badge-private{font-size:clamp(4px,1.1vw,6px);background:rgba(50,0,0,0.8);color:#ff7070;padding:2px 7px;margin-left:6px;border:1px solid rgba(255,50,50,0.25);}
 
-/* Credits */
-.credits-btn{
-  font-size:clamp(5px,1.3vw,7px);color:#2a3040;
-  background:transparent;border:1px solid #1a1f30;
-  padding:8px 16px;cursor:pointer;letter-spacing:1px;
-  transition:color .2s,border-color .2s;
-  z-index:1;position:relative;box-shadow:none;margin-top:8px;
-}
-.credits-btn:hover{color:var(--gold);border-color:rgba(255,215,0,0.3);transform:none!important;box-shadow:none!important;}
-#credits-overlay{
-  position:fixed;inset:0;background:rgba(2,3,12,0.97);
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  z-index:999;padding:20px;backdrop-filter:blur(16px);
-}
-#credits-overlay.visible{display:flex;}
-.credits-panel{
-  background:rgba(6,9,20,0.96);border:2px solid var(--gold);
-  box-shadow:var(--glow-gold),0 0 80px rgba(255,215,0,0.08),6px 6px 0 rgba(0,0,0,0.7);
-  padding:clamp(20px,5vw,38px);
-  width:100%;max-width:min(460px,calc(100vw - 32px));
-  text-align:center;position:relative;overflow:hidden;
-}
-.credits-shimmer{
-  position:absolute;top:0;left:-120%;width:60%;height:100%;
-  background:linear-gradient(90deg,transparent,rgba(255,215,0,0.05),transparent);
-  animation:shimmer 3s ease-in-out infinite;pointer-events:none;
-}
-@keyframes shimmer{to{left:160%;}}
-.credits-panel::after{
-  content:'';position:absolute;inset:6px;
-  border:1px solid rgba(255,215,0,0.08);pointer-events:none;
-}
-.credits-logo{
-  font-family:'Orbitron',var(--font);font-weight:900;
-  font-size:clamp(14px,5vw,30px);
-  color:var(--gold);text-shadow:var(--glow-gold),3px 3px 0 #5a3000;
-  margin-bottom:6px;letter-spacing:3px;
-  animation:logo-pulse 3s ease-in-out infinite alternate;
-}
-.credits-sub{font-size:clamp(5px,1.4vw,7px);color:#2a3050;letter-spacing:3px;margin-bottom:24px;}
-.credits-divider{border:none;border-top:1px solid rgba(255,215,0,0.15);margin:16px 0;}
-.credits-section-label{font-size:clamp(5px,1.3vw,6px);color:#3a4060;letter-spacing:3px;margin-bottom:8px;text-transform:uppercase;}
-.credits-name{
-  font-family:'Orbitron',var(--font);font-weight:700;
-  font-size:clamp(14px,5vw,26px);color:#fff;
-  text-shadow:0 0 40px rgba(255,255,255,0.4),3px 3px 0 #1a2050;
-  letter-spacing:2px;margin-bottom:6px;
-}
-.credits-name .name-color{color:var(--cyan);text-shadow:var(--glow-cyan),3px 3px 0 #001a30;}
-.credits-role-list{
-  font-size:clamp(5px,1.3vw,7px);color:var(--gold);
-  margin-top:14px;line-height:2.6;opacity:0.8;
-}
-.credits-copyright{
-  font-size:clamp(4px,1.1vw,6px);color:#1a2030;
-  margin-top:20px;letter-spacing:2px;line-height:2;
-}
-.credits-pixel-stars{position:absolute;font-size:10px;pointer-events:none;}
-.cpx{position:absolute;animation:float-px 3s ease-in-out infinite alternate;}
-.credits-close{
-  font-family:var(--font);font-size:clamp(6px,1.8vw,8px);
-  background:transparent;color:#2a3050;border:2px solid #1a1f2e;
-  padding:10px 22px;cursor:pointer;letter-spacing:1px;
-  margin-top:22px;transition:color .2s,border-color .2s;box-shadow:none;
-}
-.credits-close:hover{color:var(--gold);border-color:rgba(255,215,0,0.5);transform:none!important;box-shadow:none!important;}
-@keyframes float-px{to{transform:translateY(-10px) rotate(15deg);}}
-
-@media(max-width:380px){
-  .btn-flex{flex-direction:column;}
-  .btn-flex button{min-width:unset;}
-  h1{font-size:clamp(18px,10vw,30px);}
-}
-@media(min-width:768px){
-  body{padding-bottom:100px;}
-}
-@media(prefers-reduced-motion:reduce){
-  *{animation-duration:.01ms!important;transition-duration:.01ms!important;}
-}
+/* ── PRIVACY BADGE ── */
+.privacy-badge-public{font-size:clamp(4px,1.1vw,6px);background:#004e00;color:var(--green);padding:2px 6px;margin-left:6px;border:1px solid #005a00;}
+.privacy-badge-private{font-size:clamp(4px,1.1vw,6px);background:#3a0000;color:#ff6060;padding:2px 6px;margin-left:6px;border:1px solid #5a0000;}
 </style>
 </head>
 <body>
 
-<div class="sky-clouds">
-  <div class="cloud c1"></div><div class="cloud c2"></div>
-  <div class="cloud c3"></div><div class="cloud c4"></div>
-</div>
-
-<div class="header-wrap">
+<div class="title-wrap">
   <div class="coin-row">
-    <div class="coin">$</div><div class="coin">$</div><div class="coin">$</div>
-    <div class="coin">$</div><div class="coin">$</div>
+    <div class="coin"></div><div class="coin"></div><div class="coin"></div>
+    <div class="coin"></div><div class="coin"></div>
   </div>
-  <h1>VORTEX<br>ISLANDS</h1>
-  <p class="subtitle">◈ PIXEL BATTLE ROYALE ◈</p>
-  <div class="edition-badge">✦ SUPER EDITION ✦</div>
-  <div class="island-row">
-    <div class="mini-isle"><canvas id="deco-isle-1" width="64" height="32"></canvas></div>
-    <div class="mini-isle"><canvas id="deco-isle-2" width="80" height="40"></canvas></div>
-    <div class="mini-isle"><canvas id="deco-isle-3" width="56" height="28"></canvas></div>
-  </div>
+  <h1>VORTEX ISLANDS</h1>
+  <p class="subtitle">▓ SUPER PIXEL EDITION ▓</p>
 </div>
 
-<div id="status-bar">⚡ READY TO BATTLE</div>
+<div id="status-bar">⚡ READY</div>
 
 <!-- SCREEN 1: Register -->
 <div class="screen active" id="screen-register">
   <div class="card">
     <div class="card-title">🎮 ENTER YOUR NAME</div>
     <div id="error-msg"></div>
-    <input type="text" id="username-input" placeholder="YOUR WARRIOR NAME" maxlength="14" autocomplete="off"/>
-    <button class="btn-red" id="register-btn" style="width:100%;font-size:clamp(8px,2.5vw,10px);padding:15px;">⚔ ENTER ARENA!</button>
+    <input type="text" id="username-input" placeholder="YOUR NAME" maxlength="14" autocomplete="off"/>
+    <button class="btn-red" id="register-btn" style="width:100%;font-size:clamp(8px,2.5vw,10px);padding:14px;">ENTER ARENA!</button>
   </div>
 </div>
 
-<!-- SCREEN 2: Menu -->
+<!-- SCREEN 2: Host or Join — shows public lobby list below buttons -->
 <div class="screen" id="screen-menu">
   <div class="card">
-    <div class="card-title">👾 CHOOSE YOUR FATE</div>
+    <div class="card-title">👾 WHAT DO YOU WANT TO DO?</div>
     <div id="error-msg2"></div>
     <div class="btn-flex">
       <button class="btn-green" id="host-btn">🏠 HOST GAME</button>
       <button class="btn-cyan" id="join-btn">🚪 JOIN BY CODE</button>
     </div>
   </div>
+
+  <!-- PUBLIC LOBBY BROWSER — only shown in menu screen -->
   <div id="public-lobbies-section">
     <div class="lobby-list-title">
       🌐 OPEN LOBBIES
-      <button id="refresh-lobbies-btn" style="font-size:clamp(5px,1.3vw,6px);background:rgba(6,9,20,0.8);color:#3a4060;border:1px solid #1a1f30;padding:5px 9px;box-shadow:none;cursor:pointer;letter-spacing:1px;transition:color .2s;">↻ REFRESH</button>
+      <button id="refresh-lobbies-btn" style="font-size:clamp(5px,1.3vw,6px);background:#1a1a1a;color:#888;border:1px solid #333;padding:4px 8px;box-shadow:none;cursor:pointer;">↻ REFRESH</button>
     </div>
-    <div id="lobby-list-container"><div class="lobby-list-empty"><span class="spinner"></span> SCANNING FOR BATTLES...</div></div>
+    <div id="lobby-list-container"><div class="lobby-list-empty">⚡ LOADING...</div></div>
   </div>
 </div>
 
@@ -428,11 +230,11 @@ button:disabled{background:#1a1a28!important;color:#333!important;cursor:not-all
     </select>
     <label class="field-label">LOBBY VISIBILITY</label>
     <select id="privacy-select">
-      <option value="public">🌐 PUBLIC — anyone can see &amp; join</option>
+      <option value="public">🌐 PUBLIC — anyone can see & join</option>
       <option value="private">🔒 PRIVATE — code only</option>
     </select>
     <div class="btn-pair">
-      <button class="btn-yellow" id="create-lobby-btn">⚡ CREATE!</button>
+      <button class="btn-yellow" id="create-lobby-btn">CREATE!</button>
       <button class="btn-gray" onclick="showScreen('screen-menu')">← BACK</button>
     </div>
   </div>
@@ -444,9 +246,9 @@ button:disabled{background:#1a1a28!important;color:#333!important;cursor:not-all
     <div class="card-title">🚪 JOIN LOBBY</div>
     <div id="error-msg4"></div>
     <input type="text" id="lobby-code-input" placeholder="LOBBY CODE" maxlength="5"
-      style="text-transform:uppercase;letter-spacing:10px;text-align:center;font-size:clamp(14px,5vw,22px);" autocomplete="off"/>
+      style="text-transform:uppercase;letter-spacing:6px;text-align:center;" autocomplete="off"/>
     <div class="btn-pair">
-      <button class="btn-cyan" id="join-lobby-btn">▶ JOIN!</button>
+      <button class="btn-cyan" id="join-lobby-btn">JOIN!</button>
       <button class="btn-gray" onclick="showScreen('screen-menu')">← BACK</button>
     </div>
   </div>
@@ -456,247 +258,246 @@ button:disabled{background:#1a1a28!important;color:#333!important;cursor:not-all
 <div class="screen" id="screen-lobby">
   <div class="card">
     <div class="card-title" id="lobby-card-title">🏝 LOBBY</div>
-    <div style="text-align:center;font-size:clamp(5px,1.5vw,7px);color:#2a3040;margin-bottom:7px;letter-spacing:1px;" id="lobby-share-hint">SHARE THIS CODE WITH FRIENDS:</div>
+    <div style="text-align:center;font-size:clamp(5px,1.5vw,7px);color:#555;margin-bottom:6px;letter-spacing:1px;" id="lobby-share-hint">SHARE THIS CODE WITH FRIENDS:</div>
     <div id="lobby-code-display">-----</div>
     <div class="lobby-hint" id="lobby-join-hint">Friends join via VORTEX ISLANDS → JOIN BY CODE</div>
     <div id="lobby-player-count">PLAYERS: 0 / 0</div>
     <div id="lobby-players-list"></div>
     <div id="bot-controls" style="display:none;margin-bottom:10px;">
-      <button class="btn-cyan" id="add-bot-btn" style="width:100%;font-size:clamp(6px,1.8vw,8px);">🤖 ADD BOT PLAYER</button>
+      <button class="btn-cyan" id="add-bot-btn" style="width:100%;font-size:clamp(6px,1.8vw,8px);">🤖 ADD BOT</button>
     </div>
     <button class="btn-green" id="start-btn" disabled>⚔ START BATTLE!</button>
-    <button class="btn-gray" id="leave-lobby-btn" style="width:100%;margin-top:8px;font-size:clamp(6px,1.8vw,8px);">← LEAVE LOBBY</button>
+    <button class="btn-gray" id="leave-lobby-btn" style="width:100%;margin-top:8px;">← LEAVE LOBBY</button>
   </div>
 </div>
 
-<a href="/editor.html" class="editor-link">🎨 PIXALET STUDIO — MAP EDITOR</a>
-<button class="credits-btn" onclick="openCredits()">★ CREDITS &amp; INFO</button>
-
-<!-- CREDITS OVERLAY -->
-<div id="credits-overlay" onclick="if(event.target===this)closeCredits()">
-  <div class="credits-panel">
-    <div class="credits-shimmer"></div>
-    <div class="cpx" style="top:12px;left:18px;animation-delay:0s;color:rgba(255,215,0,0.5);font-size:10px;">✦</div>
-    <div class="cpx" style="top:15px;right:22px;animation-delay:1.2s;color:rgba(0,229,255,0.4);font-size:8px;">✧</div>
-    <div class="cpx" style="bottom:28px;left:25px;animation-delay:2.1s;color:rgba(255,215,0,0.4);font-size:9px;">✦</div>
-    <div class="cpx" style="bottom:22px;right:18px;animation-delay:.6s;color:rgba(0,229,255,0.3);font-size:7px;">✧</div>
-
-    <div class="credits-logo">VORTEX ISLANDS</div>
-    <div class="credits-sub">◈ PIXEL BATTLE ROYALE ◈</div>
-
-    <hr class="credits-divider"/>
-
-    <div class="credits-section-label">GAME CREATED BY</div>
-    <div class="credits-name"><span class="name-color">Nethindu</span> Thaminda</div>
-
-    <hr class="credits-divider"/>
-
-    <div class="credits-role-list">
-      ⚔ BATTLE SYSTEM DESIGN<br>
-      🏝 ISLAND GENERATION ENGINE<br>
-      🎮 GAME MECHANICS &amp; BALANCE<br>
-      🎨 PIXEL ART &amp; UI DESIGN<br>
-      🤖 BOT AI PROGRAMMING
-    </div>
-
-    <hr class="credits-divider"/>
-    <div class="credits-copyright">
-      © 2025 VORTEX ISLANDS<br>
-      ALL RIGHTS RESERVED
-    </div>
-
-    <button class="credits-close" onclick="closeCredits()">✕ CLOSE</button>
-  </div>
-</div>
+<a href="/editor.html" class="editor-link">🎨 OPEN PIXALET STUDIO</a>
 
 <script>
-// Decorative mini island renderer
-function drawMiniIsland(canvasId, seed) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const CW = W / 16, CH = H / 8;
-  const rng = (s => () => { s = (Math.imul(1664525,s)+1013904223)>>>0; return s/0xffffffff; })(seed);
-  const cx = W/2, cy = H/2, rx = W*0.38, ry = H*0.36;
-  const COLORS = ['#5aad3e','#3a8a28','#4a9a30','#48b03e','#3d8c2a','#8a9aa0','#9a6b3e'];
-  // Ocean
-  const seaGrad = ctx.createLinearGradient(0,0,0,H);
-  seaGrad.addColorStop(0,'#1a5fa0');seaGrad.addColorStop(1,'#0d3a70');
-  ctx.fillStyle = seaGrad; ctx.fillRect(0,0,W,H);
-  // Wave shimmer
-  ctx.fillStyle='rgba(255,255,255,0.06)';
-  for(let i=0;i<3;i++){ctx.fillRect(rng()*W,rng()*H,W*0.3,1);}
-  // Land
-  for(let r=0;r<8;r++){
-    for(let c=0;c<16;c++){
-      const dx=(c+.5-cx/CW)/(rx/CW),dy=(r+.5-cy/CH)/(ry/CH);
-      const dist=Math.sqrt(dx*dx+dy*dy),noise=(rng()-.5)*.4;
-      if(dist+noise<1){
-        ctx.fillStyle=COLORS[Math.floor(rng()*COLORS.length)];
-        ctx.fillRect(c*CW,r*CH,CW,CH);
-        ctx.fillStyle='rgba(255,255,255,0.1)';
-        ctx.fillRect(c*CW,r*CH,CW*.4,CH*.4);
-        ctx.fillStyle='rgba(0,0,0,0.12)';
-        ctx.fillRect(c*CW+CW*.65,r*CH+CH*.65,CW*.35,CH*.35);
-      }
-    }
+let myUsername = null, currentLobby = null, lobbyPollInterval = null;
+let publicLobbiesInterval = null;
+const API = '/api/game';
+
+async function api(action, body) {
+  if (body) {
+    const r = await fetch(`${API}?action=${action}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return r.json();
+  } else {
+    return (await fetch(`${API}?action=${action}`)).json();
   }
-  // Dividers
-  ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.setLineDash([3,4]);
-  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
-  ctx.setLineDash([]);
 }
-drawMiniIsland('deco-isle-1', 1234);
-drawMiniIsland('deco-isle-2', 5678);
-drawMiniIsland('deco-isle-3', 9012);
 
-let myUsername=null,currentLobby=null,lobbyPollInterval=null,publicLobbiesInterval=null;
-const API='/api/game';
-
-async function api(action,body){
-  if(body){const r=await fetch(`${API}?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json();}
-  return(await fetch(`${API}?action=${action}`)).json();
-}
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if(id==='screen-menu'){
-    document.getElementById('public-lobbies-section').style.display='block';
+  if (id === 'screen-menu') {
+    document.getElementById('public-lobbies-section').style.display = 'block';
     loadPublicLobbies();
-    publicLobbiesInterval=setInterval(loadPublicLobbies,5000);
-  }else{
-    document.getElementById('public-lobbies-section').style.display='none';
-    if(publicLobbiesInterval){clearInterval(publicLobbiesInterval);publicLobbiesInterval=null;}
+    publicLobbiesInterval = setInterval(loadPublicLobbies, 5000);
+  } else {
+    document.getElementById('public-lobbies-section').style.display = 'none';
+    if (publicLobbiesInterval) { clearInterval(publicLobbiesInterval); publicLobbiesInterval = null; }
   }
 }
-function showError(id,txt){const el=document.getElementById(id);if(el){el.textContent=txt;setTimeout(()=>{el.textContent='';},3500);}}
-function setStatus(msg,isErr){const bar=document.getElementById('status-bar');bar.textContent=msg;bar.className=isErr?'err':'';}
-function openCredits(){document.getElementById('credits-overlay').classList.add('visible');}
-function closeCredits(){document.getElementById('credits-overlay').classList.remove('visible');}
 
-async function loadPublicLobbies(){
-  try{
-    const data=await(await fetch(`${API}?action=public_lobbies`)).json();
-    const container=document.getElementById('lobby-list-container');
-    if(!data.lobbies||data.lobbies.length===0){
-      container.innerHTML='<div class="lobby-list-empty">No open lobbies right now.<br>Why not host one?</div>';return;
+function showError(id, txt) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = txt; setTimeout(() => { el.textContent = ''; }, 3500); }
+}
+
+function setStatus(msg, isErr) {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg; bar.className = isErr ? 'err' : '';
+}
+
+// ── PUBLIC LOBBY LIST ─────────────────────────────────────────────────────────
+async function loadPublicLobbies() {
+  try {
+    const data = await (await fetch(`${API}?action=public_lobbies`)).json();
+    const container = document.getElementById('lobby-list-container');
+    if (!data.lobbies || data.lobbies.length === 0) {
+      container.innerHTML = '<div class="lobby-list-empty">No open lobbies right now. Host one!</div>';
+      return;
     }
-    container.innerHTML=data.lobbies.map(l=>`
+    container.innerHTML = data.lobbies.map(l => `
       <div class="lobby-row" onclick="quickJoin('${l.code}')">
         <div>
           <div class="lobby-row-host">🏠 ${l.host}</div>
-          <div class="lobby-row-info">👥 ${l.players}/${l.maxPlayers} players${l.bots>0?` · 🤖 ${l.bots} bot(s)`:''} · CODE: ${l.code}</div>
+          <div class="lobby-row-info">👥 ${l.players}/${l.maxPlayers} players${l.bots > 0 ? ` · 🤖 ${l.bots} bot(s)` : ''} · CODE: ${l.code}</div>
         </div>
         <button class="lobby-row-join" onclick="event.stopPropagation();quickJoin('${l.code}')">JOIN →</button>
       </div>`).join('');
-  }catch(e){document.getElementById('lobby-list-container').innerHTML='<div class="lobby-list-empty">⚠ Could not load lobbies.</div>';}
-}
-async function quickJoin(code){
-  if(!myUsername)return showError('error-msg2','REGISTER YOUR NAME FIRST!');
-  setStatus('⚡ JOINING...');
-  const data=await api('join_lobby',{username:myUsername,code});
-  if(data.error){setStatus('❌ ERROR',true);return showError('error-msg2',data.error);}
-  renderLobbyPlayers(data.lobby);setStatus('⚡ JOINED LOBBY!');
-  showScreen('screen-lobby');startLobbyPolling(code);
-}
-document.getElementById('refresh-lobbies-btn').onclick=loadPublicLobbies;
-
-function renderLobbyPlayers(lobby){
-  currentLobby=lobby;
-  document.getElementById('lobby-code-display').textContent=lobby.code;
-  document.getElementById('lobby-player-count').textContent=`PLAYERS: ${lobby.players.length} / ${lobby.maxPlayers}`;
-  const privBadge=lobby.privacy==='private'
-    ?'<span class="privacy-badge-private">🔒 PRIVATE</span>'
-    :'<span class="privacy-badge-public">🌐 PUBLIC</span>';
-  document.getElementById('lobby-card-title').innerHTML=`🏝 LOBBY ${privBadge}`;
-  if(lobby.privacy==='private'){
-    document.getElementById('lobby-share-hint').textContent='🔒 PRIVATE — SHARE CODE WITH FRIENDS:';
-    document.getElementById('lobby-join-hint').textContent='Only players with the code can join';
-  }else{
-    document.getElementById('lobby-share-hint').textContent='SHARE THIS CODE WITH FRIENDS:';
-    document.getElementById('lobby-join-hint').textContent='Lobby visible in public list · Friends can also join by code';
+  } catch(e) {
+    document.getElementById('lobby-list-container').innerHTML = '<div class="lobby-list-empty">⚠ Could not load lobbies.</div>';
   }
-  const isHost=myUsername===lobby.host;const bots=lobby.bots||[];
-  document.getElementById('lobby-players-list').innerHTML=lobby.players.map(u=>{
-    const isBot=bots.includes(u);const isThisHost=u===lobby.host;
-    return`<div class="player-pill ${isThisHost?'host-pill':isBot?'bot-pill':''}">
-      <span>${isBot?'🤖':'🧑'} ${u}</span>
+}
+
+async function quickJoin(code) {
+  if (!myUsername) return showError('error-msg2', 'REGISTER YOUR NAME FIRST!');
+  setStatus('⚡ JOINING...');
+  const data = await api('join_lobby', { username: myUsername, code });
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg2', data.error); }
+  renderLobbyPlayers(data.lobby);
+  setStatus('⚡ JOINED LOBBY!');
+  showScreen('screen-lobby');
+  startLobbyPolling(code);
+}
+
+document.getElementById('refresh-lobbies-btn').onclick = loadPublicLobbies;
+
+// ── LOBBY RENDER ──────────────────────────────────────────────────────────────
+function renderLobbyPlayers(lobby) {
+  currentLobby = lobby;
+  document.getElementById('lobby-code-display').textContent = lobby.code;
+  document.getElementById('lobby-player-count').textContent =
+    `PLAYERS: ${lobby.players.length} / ${lobby.maxPlayers}`;
+
+  // Show privacy badge in title
+  const privBadge = lobby.privacy === 'private'
+    ? '<span class="privacy-badge-private">🔒 PRIVATE</span>'
+    : '<span class="privacy-badge-public">🌐 PUBLIC</span>';
+  document.getElementById('lobby-card-title').innerHTML = `🏝 LOBBY ${privBadge}`;
+
+  // Update hint based on privacy
+  if (lobby.privacy === 'private') {
+    document.getElementById('lobby-share-hint').textContent = '🔒 PRIVATE — SHARE CODE WITH FRIENDS:';
+    document.getElementById('lobby-join-hint').textContent = 'Only players with the code can join';
+  } else {
+    document.getElementById('lobby-share-hint').textContent = 'SHARE THIS CODE WITH FRIENDS:';
+    document.getElementById('lobby-join-hint').textContent = 'Lobby visible in public list · Friends can also join by code';
+  }
+
+  const isHost = myUsername === lobby.host;
+  const bots = lobby.bots || [];
+
+  document.getElementById('lobby-players-list').innerHTML = lobby.players.map(u => {
+    const isBot = bots.includes(u);
+    const isThisHost = u === lobby.host;
+    return `
+    <div class="player-pill ${isThisHost ? 'host-pill' : isBot ? 'bot-pill' : ''}">
+      <span>${isBot ? '🤖' : '🧑'} ${u}</span>
       <span style="display:flex;align-items:center;">
-        ${isThisHost?'<span class="badge">HOST</span>':isBot?`<span class="badge-bot">BOT</span>${isHost?`<button class="btn-rm-bot" onclick="removeBot('${u}')">✕</button>`:'`}`:'<span class="badge-alive">READY</span>'}
+        ${isThisHost
+          ? '<span class="badge">HOST</span>'
+          : isBot
+            ? `<span class="badge-bot">BOT</span>${isHost ? `<button class="btn-rm-bot" onclick="removeBot('${u}')">✕</button>` : ''}`
+            : '<span class="badge-alive">READY</span>'}
       </span>
     </div>`;
   }).join('');
-  document.getElementById('bot-controls').style.display=isHost&&lobby.players.length<lobby.maxPlayers?'block':'none';
-  const startBtn=document.getElementById('start-btn');
-  if(isHost){startBtn.style.display='block';startBtn.disabled=lobby.players.length<2;startBtn.textContent=lobby.players.length<2?'⏳ WAITING FOR PLAYERS...':`⚔ START BATTLE! (${lobby.players.length}P)`;}
-  else{startBtn.style.display='none';}
-}
-function startLobbyPolling(code){
-  stopLobbyPolling();
-  lobbyPollInterval=setInterval(async()=>{
-    try{
-      const data=await(await fetch(`${API}?action=lobby&code=${code}`)).json();
-      if(data.error){stopLobbyPolling();return;}
-      const lobby=data.lobby;
-      if(lobby.status==='in_game'){stopLobbyPolling();if(lobby.gameId)location.href=`game.html?gameId=${lobby.gameId}&username=${encodeURIComponent(myUsername)}`;return;}
-      renderLobbyPlayers(lobby);
-    }catch(e){}
-  },1500);
-}
-function stopLobbyPolling(){if(lobbyPollInterval){clearInterval(lobbyPollInterval);lobbyPollInterval=null;}}
 
-document.getElementById('register-btn').onclick=async()=>{
-  const name=document.getElementById('username-input').value.trim();
-  if(!name)return showError('error-msg','ENTER YOUR NAME!');
+  const botControls = document.getElementById('bot-controls');
+  botControls.style.display = isHost && lobby.players.length < lobby.maxPlayers ? 'block' : 'none';
+
+  const startBtn = document.getElementById('start-btn');
+  if (isHost) {
+    startBtn.style.display = 'block';
+    startBtn.disabled = lobby.players.length < 2;
+    startBtn.textContent = lobby.players.length < 2
+      ? '⏳ WAITING FOR PLAYERS...' : `⚔ START BATTLE! (${lobby.players.length}P)`;
+  } else {
+    startBtn.style.display = 'none';
+  }
+}
+
+function startLobbyPolling(code) {
+  stopLobbyPolling();
+  lobbyPollInterval = setInterval(async () => {
+    try {
+      const data = await (await fetch(`${API}?action=lobby&code=${code}`)).json();
+      if (data.error) { stopLobbyPolling(); return; }
+      const lobby = data.lobby;
+      if (lobby.status === 'in_game') {
+        stopLobbyPolling();
+        if (lobby.gameId) location.href = `game.html?gameId=${lobby.gameId}&username=${encodeURIComponent(myUsername)}`;
+        return;
+      }
+      renderLobbyPlayers(lobby);
+    } catch(e) {}
+  }, 1500);
+}
+function stopLobbyPolling() {
+  if (lobbyPollInterval) { clearInterval(lobbyPollInterval); lobbyPollInterval = null; }
+}
+
+// ── REGISTER ──────────────────────────────────────────────────────────────────
+document.getElementById('register-btn').onclick = async () => {
+  const name = document.getElementById('username-input').value.trim();
+  if (!name) return showError('error-msg', 'ENTER YOUR NAME!');
   setStatus('⚡ CONNECTING...');
-  const data=await api('register',{username:name});
-  if(data.error){setStatus('❌ ERROR',true);return showError('error-msg',data.error);}
-  myUsername=data.username;setStatus(`⚡ WELCOME, ${myUsername}!`);
+  const data = await api('register', { username: name });
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg', data.error); }
+  myUsername = data.username;
+  setStatus(`⚡ WELCOME, ${myUsername}!`);
   showScreen('screen-menu');
 };
-document.getElementById('username-input').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('register-btn').click();});
-document.getElementById('host-btn').onclick=()=>showScreen('screen-create');
-document.getElementById('create-lobby-btn').onclick=async()=>{
-  const max=parseInt(document.getElementById('max-players-select').value)||6;
-  const privacy=document.getElementById('privacy-select').value;
+document.getElementById('username-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('register-btn').click();
+});
+
+// ── HOST ──────────────────────────────────────────────────────────────────────
+document.getElementById('host-btn').onclick = () => showScreen('screen-create');
+document.getElementById('create-lobby-btn').onclick = async () => {
+  const max = parseInt(document.getElementById('max-players-select').value) || 6;
+  const privacy = document.getElementById('privacy-select').value;
   setStatus('⚡ CREATING LOBBY...');
-  const data=await api('create_lobby',{username:myUsername,maxPlayers:max,privacy});
-  if(data.error){setStatus('❌ ERROR',true);return showError('error-msg3',data.error);}
-  renderLobbyPlayers(data.lobby);setStatus(`⚡ LOBBY CREATED — CODE: ${data.lobby.code}`);
-  showScreen('screen-lobby');startLobbyPolling(data.lobby.code);
+  const data = await api('create_lobby', { username: myUsername, maxPlayers: max, privacy });
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg3', data.error); }
+  renderLobbyPlayers(data.lobby);
+  setStatus(`⚡ LOBBY CREATED — CODE: ${data.lobby.code}`);
+  showScreen('screen-lobby');
+  startLobbyPolling(data.lobby.code);
 };
-document.getElementById('join-btn').onclick=()=>showScreen('screen-join');
-document.getElementById('join-lobby-btn').onclick=async()=>{
-  const code=document.getElementById('lobby-code-input').value.trim().toUpperCase();
-  if(code.length<4)return showError('error-msg4','ENTER A VALID CODE');
+
+// ── JOIN BY CODE ──────────────────────────────────────────────────────────────
+document.getElementById('join-btn').onclick = () => showScreen('screen-join');
+document.getElementById('join-lobby-btn').onclick = async () => {
+  const code = document.getElementById('lobby-code-input').value.trim().toUpperCase();
+  if (code.length < 4) return showError('error-msg4', 'ENTER A VALID CODE');
   setStatus('⚡ JOINING...');
-  const data=await api('join_lobby',{username:myUsername,code});
-  if(data.error){setStatus('❌ ERROR',true);return showError('error-msg4',data.error);}
-  renderLobbyPlayers(data.lobby);setStatus('⚡ JOINED LOBBY!');
-  showScreen('screen-lobby');startLobbyPolling(code);
+  const data = await api('join_lobby', { username: myUsername, code });
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg4', data.error); }
+  renderLobbyPlayers(data.lobby);
+  setStatus('⚡ JOINED LOBBY!');
+  showScreen('screen-lobby');
+  startLobbyPolling(code);
 };
-document.getElementById('lobby-code-input').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('join-lobby-btn').click();});
-document.getElementById('start-btn').onclick=async()=>{
-  if(!currentLobby)return;setStatus('⚡ STARTING BATTLE...');
-  const data=await api('start_game',{username:myUsername,code:currentLobby.code});
-  if(data.error){setStatus('❌ ERROR',true);return showError('error-msg2',data.error);}
-  stopLobbyPolling();location.href=`game.html?gameId=${data.gameId}&username=${encodeURIComponent(myUsername)}`;
+document.getElementById('lobby-code-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('join-lobby-btn').click();
+});
+
+// ── START ─────────────────────────────────────────────────────────────────────
+document.getElementById('start-btn').onclick = async () => {
+  if (!currentLobby) return;
+  setStatus('⚡ STARTING BATTLE...');
+  const data = await api('start_game', { username: myUsername, code: currentLobby.code });
+  if (data.error) { setStatus('❌ ERROR', true); return showError('error-msg2', data.error); }
+  stopLobbyPolling();
+  location.href = `game.html?gameId=${data.gameId}&username=${encodeURIComponent(myUsername)}`;
 };
-document.getElementById('leave-lobby-btn').onclick=async()=>{
-  if(currentLobby)await api('leave_lobby',{username:myUsername,code:currentLobby.code});
-  stopLobbyPolling();currentLobby=null;setStatus('⚡ READY TO BATTLE');showScreen('screen-menu');
+
+// ── LEAVE ─────────────────────────────────────────────────────────────────────
+document.getElementById('leave-lobby-btn').onclick = async () => {
+  if (currentLobby) await api('leave_lobby', { username: myUsername, code: currentLobby.code });
+  stopLobbyPolling(); currentLobby = null;
+  setStatus('⚡ READY');
+  showScreen('screen-menu');
 };
-document.getElementById('add-bot-btn').onclick=async()=>{
-  if(!currentLobby)return;
-  const data=await api('add_bot',{username:myUsername,code:currentLobby.code});
-  if(data.error)return showError('error-msg2',data.error);
-  renderLobbyPlayers(data.lobby);setStatus('🤖 BOT ADDED!');
+
+// ── ADD/REMOVE BOT ────────────────────────────────────────────────────────────
+document.getElementById('add-bot-btn').onclick = async () => {
+  if (!currentLobby) return;
+  const data = await api('add_bot', { username: myUsername, code: currentLobby.code });
+  if (data.error) return showError('error-msg2', data.error);
+  renderLobbyPlayers(data.lobby); setStatus('🤖 BOT ADDED!');
 };
-async function removeBot(botName){
-  if(!currentLobby)return;
-  const data=await api('remove_bot',{username:myUsername,code:currentLobby.code,botName});
-  if(!data.error)renderLobbyPlayers(data.lobby);
+async function removeBot(botName) {
+  if (!currentLobby) return;
+  const data = await api('remove_bot', { username: myUsername, code: currentLobby.code, botName });
+  if (!data.error) renderLobbyPlayers(data.lobby);
 }
 </script>
 </body>
