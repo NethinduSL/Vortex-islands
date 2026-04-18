@@ -465,9 +465,16 @@ let gameState = null, myRPSSubmitted = false, pendingAction = null;
 let pollInterval = null, gameOver = false, failCount = 0;
 let logVisible = false;
 
-// ── Fetch with timeout to prevent hanging requests ──
+// ── Safe JSON parse — guards against Vercel returning an HTML error page ──
+async function safeJson(resp) {
+  const text = await resp.text();
+  try { return JSON.parse(text); }
+  catch(e) { return { error: 'SERVER_ERROR' }; }
+}
+
+// ── Fetch with timeout to prevent hanging requests (10s, up from 8s) ──
 async function fetchWithTimeout(url, opts, ms) {
-  ms = ms || 8000;
+  ms = ms || 10000;
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), ms);
   try {
@@ -481,10 +488,11 @@ async function post(action, body) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  return r.json();
+  return safeJson(r);
 }
 async function getState() {
-  return (await fetchWithTimeout(`${API}?action=game&gameId=${GAME_ID}`)).json();
+  const r = await fetchWithTimeout(`${API}?action=game&gameId=${GAME_ID}`);
+  return safeJson(r);
 }
 
 // ══ Settings ═══════════════════════════════════════════
@@ -727,52 +735,59 @@ function buyItem(act) {
 // ══ Polling ═══════════════════════════════════════════
 function stopPolling() { if (pollInterval) { clearInterval(pollInterval); pollInterval = null; } }
 let lastHash = '';
-// ── Poll with reconnect grace — game stays alive through connection blips ──
+// ── Poll with exponential-backoff reconnect ──
 let reconnectTimer = null;
+let backoffMs = 2500; // starts at 2.5s, grows on repeated errors
+let isPollRunning = false; // guard against overlapping poll calls
+
 async function poll() {
+  // If a previous poll is still in-flight (slow server), skip this tick
+  if (isPollRunning) return;
+  isPollRunning = true;
   try {
     const data = await getState();
     if (data.error) {
       failCount++;
-      // Don't crash the game — server may have had a hiccup
-      if (failCount >= 4) {
-        const bar = document.getElementById('conn-text');
+      const bar = document.getElementById('conn-text');
+      if (failCount >= 3) {
         bar.innerHTML = '<span class="spinner"></span>RECONNECTING...';
         bar.parentElement.className = '';
       }
-      // After 120 fails (~3.6 min) show lost message but DON'T stop polling
-      // This way if server comes back, game resumes automatically
-      if (failCount >= 120) {
-        const bar = document.getElementById('conn-text');
+      // After 90 consecutive fails (~3.75 min at 2.5s each) warn but keep going
+      if (failCount >= 90) {
         bar.textContent = '⚠ CONNECTION WEAK — STILL TRYING...';
         bar.parentElement.className = 'err';
       }
+      isPollRunning = false;
       return;
     }
+    // Success — reset counters and backoff
     failCount = 0;
+    backoffMs = 2500;
     const state = data.state;
-    const hash = state.phase+(state.moves?.length||0)+JSON.stringify(state.pendingRPS)+JSON.stringify(state.islands);
+    const hash = state.phase + (state.moves?.length||0) + JSON.stringify(state.pendingRPS) + JSON.stringify(state.islands);
     if (hash !== lastHash || !gameState) { lastHash = hash; updateUI(state); }
     if (state.gameOver && !gameOver) showGameOver(state.winner, state);
     const bar = document.getElementById('conn-text');
     bar.textContent = '⚡ LIVE'; bar.parentElement.className = 'ok';
   } catch(e) {
     failCount++;
-    if (failCount >= 3) {
-      const bar = document.getElementById('conn-text');
+    const bar = document.getElementById('conn-text');
+    if (failCount >= 2) {
       bar.innerHTML = '<span class="spinner"></span>RECONNECTING...';
       bar.parentElement.className = '';
     }
-    // Never permanently stop polling — always keep trying to reconnect
-    // Only show lost after very long time (5+ minutes)
-    if (failCount >= 200) {
-      const bar = document.getElementById('conn-text');
-      bar.textContent = '❌ CONNECTION LOST — REFRESH TO REJOIN';
+    // Exponential backoff — slow down polls when server is struggling
+    backoffMs = Math.min(backoffMs * 1.4, 12000);
+    // After 150 consecutive network errors (~10+ min) attempt full self-heal
+    if (failCount >= 150) {
+      bar.textContent = '❌ CONNECTION LOST — RETRYING...';
       bar.parentElement.className = 'err';
       stopPolling();
-      // Auto-retry init after 5s so the page can self-heal
-      setTimeout(() => { gameOver = false; failCount = 0; init(1); }, 5000);
+      setTimeout(() => { gameOver = false; failCount = 0; backoffMs = 2500; init(1); }, 5000);
     }
+  } finally {
+    isPollRunning = false;
   }
 }
 
@@ -785,7 +800,7 @@ window.addEventListener('resize', () => {
 // ── Robust init with retries (fixes "GAME NOT FOUND" on server cold start) ──
 async function init(attempt) {
   attempt = attempt || 1;
-  const MAX_ATTEMPTS = 8;
+  const MAX_ATTEMPTS = 10;
   initIcons();
   const bar = document.getElementById('conn-text');
   bar.innerHTML = `<span class="spinner"></span>CONNECTING... (${attempt}/${MAX_ATTEMPTS})`;
@@ -795,7 +810,7 @@ async function init(attempt) {
       if (attempt < MAX_ATTEMPTS) {
         // Server may still be waking up — retry with backoff
         bar.innerHTML = `<span class="spinner"></span>RETRYING... (${attempt}/${MAX_ATTEMPTS})`;
-        setTimeout(() => init(attempt + 1), 1200 * attempt);
+        setTimeout(() => init(attempt + 1), Math.min(1200 * attempt, 8000));
         return;
       }
       bar.textContent = '❌ GAME NOT FOUND — CHECK YOUR LINK'; bar.parentElement.className = 'err'; return;
@@ -803,11 +818,12 @@ async function init(attempt) {
     bar.textContent = '⚡ LIVE'; bar.parentElement.className = 'ok';
     updateUI(data.state);
     if (data.state.gameOver) { showGameOver(data.state.winner, data.state); return; }
-    pollInterval = setInterval(poll, 1800);
+    // Use adaptive interval — poll every 2.5s (was 1.8s), avoid hammering Vercel
+    pollInterval = setInterval(poll, 2500);
   } catch(e) {
     if (attempt < MAX_ATTEMPTS) {
       bar.innerHTML = `<span class="spinner"></span>RETRYING... (${attempt}/${MAX_ATTEMPTS})`;
-      setTimeout(() => init(attempt + 1), 1500 * attempt);
+      setTimeout(() => init(attempt + 1), Math.min(1500 * attempt, 8000));
       return;
     }
     bar.textContent = '❌ FAILED TO LOAD — REFRESH'; bar.parentElement.className = 'err';
