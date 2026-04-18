@@ -407,10 +407,17 @@ function closeSplash() {
   setTimeout(() => sp.remove(), 750);
 }
 
-// Fetch with 8s timeout to prevent hanging on slow/cold server
+// Safe JSON parse — handles Vercel HTML error pages gracefully
+async function safeJson(resp) {
+  const text = await resp.text();
+  try { return JSON.parse(text); }
+  catch(e) { return { error: 'SERVER_ERROR' }; }
+}
+
+// Fetch with 10s timeout to handle Vercel cold starts
 async function fetchTimeout(url, opts) {
   const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 8000);
+  const tid = setTimeout(() => ctrl.abort(), 10000);
   try {
     const r = await fetch(url, { ...opts, signal: ctrl.signal });
     clearTimeout(tid);
@@ -423,9 +430,9 @@ async function api(action, body) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    return r.json();
+    return safeJson(r);
   } else {
-    return (await fetchTimeout(`${API}?action=${action}`)).json();
+    return safeJson(await fetchTimeout(`${API}?action=${action}`));
   }
 }
 
@@ -460,7 +467,7 @@ function setStatus(msg, isErr) {
 // ── PUBLIC LOBBY LIST ─────────────────────────────────────────────────────────
 async function loadPublicLobbies() {
   try {
-    const data = await (await fetch(`${API}?action=public_lobbies`)).json();
+    const data = await safeJson(await fetch(`${API}?action=public_lobbies`));
     const container = document.getElementById('lobby-list-container');
     if (!data.lobbies || data.lobbies.length === 0) {
       container.innerHTML = '<div class="lobby-list-empty">No open lobbies right now. Host one!</div>';
@@ -549,10 +556,23 @@ function renderLobbyPlayers(lobby) {
 
 function startLobbyPolling(code) {
   stopLobbyPolling();
+  let lobbyFailCount = 0;
+  let isLobbyPollRunning = false;
   lobbyPollInterval = setInterval(async () => {
+    if (isLobbyPollRunning) return;
+    isLobbyPollRunning = true;
     try {
-      const data = await (await fetch(`${API}?action=lobby&code=${code}`)).json();
-      if (data.error) { stopLobbyPolling(); return; }
+      const resp = await fetchTimeout(`${API}?action=lobby&code=${code}`);
+      const data = await safeJson(resp);
+      if (data.error) {
+        lobbyFailCount++;
+        // Only stop if the lobby is definitively gone (not just a network blip)
+        // Keep retrying for up to 60 consecutive errors (~2 min) before giving up
+        if (lobbyFailCount >= 60) { stopLobbyPolling(); }
+        isLobbyPollRunning = false;
+        return;
+      }
+      lobbyFailCount = 0; // reset on success
       const lobby = data.lobby;
       if (lobby.status === 'in_game') {
         stopLobbyPolling();
@@ -560,8 +580,13 @@ function startLobbyPolling(code) {
         return;
       }
       renderLobbyPlayers(lobby);
-    } catch(e) {}
-  }, 1500);
+    } catch(e) {
+      lobbyFailCount++;
+      if (lobbyFailCount >= 60) { stopLobbyPolling(); }
+    } finally {
+      isLobbyPollRunning = false;
+    }
+  }, 2000);
 }
 function stopLobbyPolling() {
   if (lobbyPollInterval) { clearInterval(lobbyPollInterval); lobbyPollInterval = null; }
@@ -661,14 +686,14 @@ function startHeartbeat() {
     } catch(e) {}
   }
   beat();
-  heartbeatInterval = setInterval(beat, 8000);
+  heartbeatInterval = setInterval(beat, 5000); // 5s keeps online presence alive through cold starts
 }
 
 // ── ONLINE PLAYERS LIST ───────────────────────────────────────────────────────
 async function loadOnlinePlayers() {
   if (!myUsername) return;
   try {
-    const data = await (await fetchTimeout(`${API}?action=online_players&username=${encodeURIComponent(myUsername)}`)).json();
+    const data = await safeJson(await fetchTimeout(`${API}?action=online_players&username=${encodeURIComponent(myUsername)}`));
     const players = data.players || [];
     const countEl = document.getElementById('online-count');
     const listEl = document.getElementById('online-list');
