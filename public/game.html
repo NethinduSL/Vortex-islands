@@ -2,673 +2,816 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>VORTEX ISLANDS — BATTLE</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --sky:#5c94fc;
-  --brick:#b44a06;
-  --brick-dark:#8b3504;
-  --brick-mortar:#7a3003;
-  --gold:#ffd700;
-  --coin:#ffcc00;
-  --green-pipe:#3aa832;
-  --green-pipe2:#2d8a26;
-  --green-mario:#43b800;
-  --red:#e52222;
-  --red2:#c01818;
-  --white:#fff;
-  --hud-bg:#000080;
-  --question:#d4a017;
-  --question2:#b8860b;
-  --font:'Press Start 2P',monospace;
-  --ts:2px 2px 0 #000;
+  --bg:#1260a8;--gold:#ffd700;--green:#39ff14;--red:#ff1744;
+  --cyan:#00c8ff;--orange:#ff9800;--dark:#0a0a0a;--panel:rgba(8,8,8,0.93);
+  --font:'Press Start 2P',monospace;--coin:#ffd700;
 }
-html,body{height:100%;width:100%;overflow:hidden;background:var(--sky);}
-body{font-family:var(--font);display:flex;flex-direction:column;}
-
-/* ─── SKY BG ─── */
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 70px 35px at 12% 18%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 45px 28px at 8% 14%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 55px 28px at 18% 14%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 80px 38px at 55% 12%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 50px 30px at 50% 8%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 60px 30px at 63% 8%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 60px 30px at 85% 20%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 40px 24px at 80% 16%,#fff 60%,transparent 80%),
-    radial-gradient(ellipse 45px 24px at 91% 16%,#fff 60%,transparent 80%),
-    linear-gradient(180deg,#5c94fc 0%,#7ab4ff 60%,#a8d4ff 100%);
-  animation:cloudFloat 28s linear infinite;
-}
-@keyframes cloudFloat{0%{background-position-x:0,0,0,0,0,0,0,0,0,0;}100%{background-position-x:220px,220px,220px,220px,220px,220px,220px,220px,220px,0;}}
-
-/* floating coins bg */
-.bg-c{position:fixed;z-index:0;pointer-events:none;font-size:11px;animation:cfloat linear infinite;opacity:.3;}
-@keyframes cfloat{0%{transform:translateY(0) scale(1);opacity:.3;}50%{opacity:.5;}100%{transform:translateY(-100vh) scale(1.2);opacity:0;}}
-
-/* ─── HUD (Mario scoreboard) ─── */
-#hud{
-  position:relative;z-index:50;flex-shrink:0;
-  background:#000080;border-bottom:4px solid #000;
-  height:42px;padding:0 8px;
-  display:flex;align-items:center;justify-content:space-between;gap:6px;
-}
-#hud::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:2px;background:rgba(255,255,255,0.1);}
-.hb{display:flex;flex-direction:column;align-items:center;gap:1px;}
-.hl{font-size:clamp(4px,1.1vw,6px);color:#fff;letter-spacing:1px;text-shadow:var(--ts);}
-.hv{font-size:clamp(6px,1.8vw,9px);color:var(--gold);text-shadow:2px 2px 0 #000,0 0 8px rgba(255,215,0,0.4);letter-spacing:1px;}
-.hv.gn{color:var(--green-mario);}
-.hv.rd{color:var(--red);}
-.hv.cy{color:#00ffff;}
-.hsep{width:2px;height:26px;background:#0000aa;flex-shrink:0;}
-.coin-hud{display:flex;align-items:center;gap:3px;font-size:clamp(5px,1.5vw,7px);color:var(--coin);text-shadow:var(--ts);}
-.cs{width:clamp(8px,2.2vw,11px);height:clamp(8px,2.2vw,11px);background:radial-gradient(circle at 35% 35%,#ffe98f,var(--coin) 55%,#cc9900);border-radius:50%;border:1px solid #000;animation:sc 1s linear infinite;flex-shrink:0;}
-@keyframes sc{0%{transform:scaleX(1);}25%{transform:scaleX(.2);}50%{transform:scaleX(1);}75%{transform:scaleX(.2);}100%{transform:scaleX(1);}}
-#settings-btn{background:var(--question);border:3px solid #000;color:#000;font-size:clamp(7px,2.2vw,10px);width:clamp(28px,7vw,34px);height:clamp(28px,7vw,34px);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:3px 3px 0 #000;font-family:var(--font);transition:transform .08s,filter .1s;flex-shrink:0;}
-#settings-btn:hover{filter:brightness(1.15);}
-#settings-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
-
-/* ─── SEA WORLD ─── */
-#sea-world{flex:1;position:relative;overflow:hidden;cursor:grab;touch-action:none;min-height:0;z-index:1;}
-#sea-world:active{cursor:grabbing;}
-#sea-canvas{position:absolute;top:0;left:0;image-rendering:pixelated;}
-#sea-world::after{content:'';position:absolute;bottom:0;left:0;right:0;height:5px;z-index:5;pointer-events:none;background:repeating-linear-gradient(90deg,#5c9e28 0,#5c9e28 4px,#4a8020 4px,#4a8020 8px);}
-#zoom-strip{position:absolute;bottom:14px;right:8px;z-index:20;display:flex;flex-direction:column;align-items:center;gap:2px;}
-.zb{width:clamp(26px,7vw,34px);height:clamp(26px,7vw,34px);background:var(--green-pipe);border:3px solid #000;box-shadow:3px 3px 0 #000;color:#fff;font-family:var(--font);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .1s,transform .08s;}
-.zb:hover{filter:brightness(1.2);}
-.zb:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
-#zoom-pct{font-size:6px;color:#fff;text-align:center;letter-spacing:1px;text-shadow:var(--ts);background:rgba(0,0,0,.5);padding:1px 3px;}
-
-/* ─── BOTTOM PANEL ─── */
-#panel{
-  flex-shrink:0;z-index:40;
-  background:var(--brick);
-  border-top:4px solid #000;
-  display:flex;flex-direction:column;
-  max-height:46vh;overflow-y:auto;
+html,body{min-height:100%;width:100%;overflow-x:hidden;}
+body{
+  background:var(--bg);
   background-image:
-    linear-gradient(var(--brick-mortar) 0px,var(--brick-mortar) 2px,transparent 2px),
-    repeating-linear-gradient(90deg,transparent 0,transparent 36px,var(--brick-mortar) 36px,var(--brick-mortar) 38px);
-  background-size:38px 20px,38px 20px;
+    radial-gradient(ellipse 60% 40% at 15% 85%,rgba(255,255,255,.04) 0%,transparent 70%),
+    radial-gradient(ellipse 40% 30% at 80% 10%,rgba(255,255,255,.06) 0%,transparent 70%),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.015) 0,rgba(255,255,255,.015) 1px,transparent 1px,transparent 40px);
+  font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;
 }
-@media(min-width:600px){#panel{max-height:38vh;}}
-#pi{background:rgba(120,50,0,.82);display:flex;flex-direction:column;flex:1;}
-
-/* phase banner */
-#pb{padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;background:rgba(0,0,0,.55);border-bottom:2px solid #000;flex-shrink:0;}
-#pt{font-size:clamp(6px,2vw,9px);letter-spacing:1px;flex:1;text-shadow:var(--ts);}
-.pt-g{color:var(--green-mario);} .pt-y{color:var(--gold);} .pt-c{color:#00ffff;} .pt-r{color:#ff6655;}
-
-/* slot stars */
-#sb{display:none;align-items:center;gap:3px;flex-shrink:0;}
-#sb.on{display:flex;}
-.sp{font-size:10px;filter:drop-shadow(0 0 3px gold);}
-.sp.u{filter:grayscale(1) opacity(.3);}
-
-/* rps pips */
-#rp{padding:4px 10px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;border-bottom:2px solid rgba(0,0,0,.4);flex-shrink:0;}
-#rp:empty{display:none;padding:0;}
-.rc{font-size:7px;padding:2px 6px;background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);letter-spacing:1px;text-shadow:1px 1px 0 #000;}
-.rc.done{border-color:var(--green-mario);color:var(--green-mario);}
-
-/* ctrl body */
-#cb{padding:8px;display:flex;gap:7px;flex-wrap:wrap;align-items:flex-start;}
-
-/* question block cards */
-.qc{position:relative;background:var(--question);border:3px solid #000;box-shadow:4px 4px 0 #000,inset 1px 1px 0 rgba(255,255,255,.3),inset -1px -1px 0 rgba(0,0,0,.3);padding:7px;display:flex;flex-direction:column;gap:5px;border-radius:2px;}
-.qc::before{content:'';position:absolute;top:2px;left:2px;right:2px;height:4px;background:rgba(255,255,255,.2);border-radius:1px;pointer-events:none;}
-.cl{font-size:clamp(4px,1.2vw,6px);color:#000;letter-spacing:2px;opacity:.7;}
-
-/* rps buttons */
-.rr{display:flex;gap:5px;}
-.rb{font-family:var(--font);cursor:pointer;width:clamp(50px,13vw,65px);height:clamp(50px,13vw,65px);background:var(--red);border:3px solid #000;box-shadow:4px 4px 0 #000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .08s,box-shadow .08s,filter .1s;position:relative;overflow:hidden;}
-.rb::after{content:'';position:absolute;top:2px;left:2px;right:2px;height:5px;background:rgba(255,255,255,.2);}
-.rb:hover:not(:disabled){filter:brightness(1.2);}
-.rb:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 #000;}
-.rb:disabled{opacity:.3;cursor:not-allowed;box-shadow:none;}
-.ri{font-size:clamp(16px,5vw,21px);line-height:1;}
-.rl{font-size:clamp(3px,1vw,5px);color:#fff;letter-spacing:1px;text-shadow:var(--ts);}
-
-/* action buttons */
-.ar{display:flex;gap:5px;flex-wrap:wrap;}
-.ab{font-family:var(--font);cursor:pointer;border:3px solid #000;box-shadow:4px 4px 0 #000;padding:clamp(6px,1.8vw,9px) clamp(6px,1.8vw,10px);display:flex;flex-direction:column;align-items:center;gap:3px;min-width:clamp(50px,13vw,68px);transition:transform .08s,box-shadow .08s,filter .1s;position:relative;overflow:hidden;}
-.ab::after{content:'';position:absolute;top:2px;left:2px;right:2px;height:4px;background:rgba(255,255,255,.15);}
-.ab:hover:not(:disabled){filter:brightness(1.2);}
-.ab:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 #000;}
-.ab:disabled{opacity:.25;cursor:not-allowed;box-shadow:none;}
-.ai{font-size:clamp(13px,4vw,17px);line-height:1;}
-.al{font-size:clamp(3px,1vw,5px);color:#fff;letter-spacing:1px;text-shadow:var(--ts);text-align:center;}
-.as{font-size:clamp(3px,.8vw,4px);color:rgba(255,255,255,.5);text-align:center;line-height:1.5;}
-.b-buy{background:var(--green-pipe);}
-.b-use{background:#1a56c0;}
-.b-shld{background:#008b8b;}
-
-/* storage */
-.ss{display:flex;gap:5px;flex-wrap:wrap;}
-.si{display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.15);padding:4px 6px;min-width:42px;}
-.si-i{font-size:11px;}
-.si-v{font-size:clamp(8px,2.5vw,12px);color:var(--gold);text-shadow:1px 1px 0 #000,0 0 6px rgba(255,200,0,.5);}
-.si-l{font-size:5px;color:rgba(255,255,255,.5);letter-spacing:1px;}
-
-/* target selector */
-#ts{display:none;width:100%;flex-direction:column;gap:6px;align-items:center;padding:6px 8px;border-top:2px solid rgba(0,0,0,.4);}
-#ts.on{display:flex;}
-#tl{font-size:clamp(5px,1.6vw,7px);color:var(--gold);letter-spacing:1px;text-shadow:var(--ts);}
-#tr{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
-.tbtn{font-family:var(--font);font-size:clamp(4px,1.3vw,6px);cursor:pointer;background:var(--question2);border:3px solid #000;color:#000;padding:7px 12px;box-shadow:3px 3px 0 #000;letter-spacing:1px;transition:filter .1s,transform .08s;}
-.tbtn:hover{filter:brightness(1.2);}
-.tbtn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
-.cbtn{font-family:var(--font);font-size:clamp(4px,1.2vw,5px);cursor:pointer;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:rgba(255,255,255,.6);padding:5px 10px;letter-spacing:1px;transition:border-color .15s,color .15s;}
-.cbtn:hover{border-color:#ff6655;color:#ff6655;}
-
-#flash{font-size:8px;color:#ff6655;min-height:11px;text-align:center;padding:0 10px;letter-spacing:1px;text-shadow:var(--ts);}
-#log-box{display:none;border-top:2px solid rgba(0,0,0,.4);padding:5px 8px;max-height:50px;overflow-y:auto;}
-#log-box.on{display:block;}
-#ml{font-size:7px;color:rgba(255,255,255,.5);line-height:2;}
-#ml p{border-bottom:1px solid rgba(0,0,0,.3);padding:1px 0;}
-#ml p:last-child{color:var(--gold);}
-
-/* ─── COIN POP ─── */
-.cpop{position:fixed;pointer-events:none;z-index:500;font-family:var(--font);font-size:9px;color:var(--gold);text-shadow:var(--ts);animation:cpfloat .8s ease-out forwards;}
-@keyframes cpfloat{0%{transform:translateY(0) scale(1);opacity:1;}100%{transform:translateY(-45px) scale(1.3);opacity:0;}}
-
-/* ─── RPS POPUP ─── */
-#rps-popup{
-  position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%) scale(.7);
-  background:var(--question);border:4px solid #000;
-  box-shadow:6px 6px 0 #000,0 0 0 8px rgba(0,0,0,.3);
-  padding:clamp(14px,4vw,24px) clamp(18px,5vw,36px);
-  z-index:300;display:none;flex-direction:column;align-items:center;gap:7px;
-  opacity:0;transition:transform .25s cubic-bezier(.175,.885,.32,1.4),opacity .2s;
-  pointer-events:none;min-width:min(260px,84vw);
+#conn-bar{
+  background:#070707;border-bottom:3px solid var(--gold);padding:8px 16px;
+  font-size:clamp(6px,1.8vw,8px);color:var(--gold);display:flex;
+  align-items:center;justify-content:space-between;letter-spacing:2px;flex-shrink:0;
 }
-#rps-popup::before{content:'';position:absolute;top:3px;left:3px;right:3px;height:6px;background:rgba(255,255,255,.25);}
-#rps-popup.show{display:flex;opacity:1;transform:translate(-50%,-50%) scale(1);}
-#rps-popup.hide{opacity:0;transform:translate(-50%,-50%) scale(.85);}
-#rp-emo{font-size:clamp(28px,8vw,44px);line-height:1;}
-#rp-title{font-size:clamp(8px,2.8vw,13px);color:#000;letter-spacing:1px;text-align:center;}
-#rp-sub{font-size:clamp(5px,1.5vw,7px);color:rgba(0,0,0,.65);text-align:center;letter-spacing:1px;}
-#rp-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;}
-.rpc2{font-size:7px;padding:3px 8px;border:2px solid #000;color:#000;background:rgba(0,0,0,.12);}
-.rpc2.win{background:var(--green-mario);color:#fff;}
-.rpc2.lose{opacity:.35;}
+#conn-bar.ok{color:var(--green);text-shadow:0 0 6px var(--green);}
+#conn-bar.err{color:var(--red);}
+#settings-btn{
+  font-family:var(--font);font-size:clamp(5px,1.4vw,7px);background:#1a1a1a;
+  color:var(--gold);border:2px solid #333;padding:5px 10px;cursor:pointer;
+  letter-spacing:1px;box-shadow:2px 2px 0 #000;
+}
+#settings-btn:hover{background:#252525;}
+.spinner{display:inline-block;width:8px;height:8px;border:2px solid rgba(255,215,0,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+#main{display:flex;flex-direction:column;align-items:center;padding:clamp(10px,2.5vw,18px) clamp(8px,2vw,16px);gap:clamp(10px,2.5vw,16px);flex:1;}
+#islands-row{display:flex;gap:clamp(8px,2vw,20px);flex-wrap:wrap;justify-content:center;width:100%;}
+.island-panel{display:flex;flex-direction:column;align-items:center;gap:5px;transition:opacity .35s,filter .35s;}
+.island-panel.eliminated{opacity:.22;filter:grayscale(1) brightness(.45);}
+.island-name-tag{
+  font-size:clamp(5px,1.4vw,7px);background:var(--dark);border:2px solid var(--gold);
+  padding:3px 9px;color:var(--gold);white-space:nowrap;letter-spacing:1px;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;
+}
+.island-name-tag.my-tag{border-color:var(--green);color:var(--green);box-shadow:0 0 8px rgba(57,255,20,0.25);}
+.island-name-tag.bot-tag{border-color:#0088cc55;color:#00c8ff;}
+.island-canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:2px;}
+.island-stats{font-size:clamp(5px,1.3vw,6px);color:#fff;background:rgba(0,0,0,.7);padding:4px 9px;text-align:center;line-height:2.2;border-radius:2px;white-space:nowrap;}
+.elim-badge{font-size:clamp(5px,1.2vw,6px);background:var(--red);color:#fff;padding:2px 6px;}
+.inv-badge{font-size:clamp(5px,1.2vw,6px);background:rgba(0,0,0,.75);border:1px solid #444;color:var(--gold);padding:3px 7px;letter-spacing:1px;border-radius:2px;}
+.coin-badge{font-size:clamp(5px,1.2vw,7px);background:rgba(0,0,0,.85);border:2px solid var(--coin);color:var(--coin);padding:3px 10px;letter-spacing:1px;border-radius:2px;text-shadow:0 0 6px rgba(255,215,0,0.4);}
+#controls{
+  width:100%;max-width:min(860px,calc(100vw - 16px));background:var(--panel);
+  border:3px solid var(--gold);box-shadow:5px 5px 0 #000,0 0 20px rgba(255,215,0,0.06);
+  padding:clamp(10px,2.5vw,16px);display:flex;flex-direction:column;align-items:center;
+  gap:clamp(8px,2vw,12px);
+}
+#phase-text{font-size:clamp(7px,2vw,10px);text-align:center;letter-spacing:1px;min-height:20px;}
+.text-green{color:var(--green);text-shadow:0 0 8px rgba(57,255,20,0.4);}
+.text-yellow{color:var(--gold);}
+.text-cyan{color:var(--cyan);}
+.text-red{color:var(--red);}
+.text-orange{color:var(--orange);}
+.section-label{font-size:clamp(5px,1.3vw,6px);color:#555;letter-spacing:2px;margin-top:2px;}
+.btn-row{display:flex;gap:clamp(5px,1.5vw,8px);flex-wrap:wrap;justify-content:center;}
+button.game-btn{
+  font-family:var(--font);font-size:clamp(5px,1.4vw,7px);cursor:pointer;border:none;
+  padding:0;box-shadow:3px 3px 0 #000;text-transform:uppercase;letter-spacing:1px;
+  display:flex;flex-direction:column;align-items:center;overflow:hidden;
+  transition:transform .05s,box-shadow .05s,filter .1s;
+  min-width:clamp(60px,14vw,84px);
+}
+button.game-btn:hover:not(:disabled){filter:brightness(1.15);}
+button.game-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
+button.game-btn:disabled{opacity:.28;cursor:not-allowed;box-shadow:none;}
+.btn-icon{width:clamp(28px,7vw,44px);height:clamp(28px,7vw,44px);image-rendering:pixelated;margin:clamp(4px,1.2vw,7px) auto clamp(3px,1vw,5px);}
+.btn-label{font-size:clamp(4px,1.2vw,6px);padding:clamp(2px,.8vw,4px) 4px clamp(4px,1vw,6px);width:100%;text-align:center;}
+.btn-label small{display:block;font-size:clamp(3px,.9vw,4px);opacity:.65;margin-top:2px;white-space:normal;line-height:1.5;}
+.btn-rps{background:#9a1818;}.btn-rps .btn-label{background:#b52020;color:#fff;}
+.btn-action{background:#141a6e;}.btn-action .btn-label{background:#1e2890;color:#fff;}
+.btn-inv{background:#0d4a18;}.btn-inv .btn-label{background:#1a6628;color:#fff;}
+.btn-store{background:#3a0e7a;}.btn-store .btn-label{background:#521295;color:#fff;}
+.btn-shop{background:#5a3a00;}.btn-shop .btn-label{background:#7a5000;color:var(--gold);}
+#flash-msg{font-size:clamp(6px,1.7vw,8px);color:#ff4500;min-height:14px;text-align:center;letter-spacing:1px;}
+.rps-waiting-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;font-size:clamp(5px,1.3vw,6px);color:#555;}
+.rps-pip{padding:3px 7px;border:1px solid #2a2a2a;color:#444;}
+.rps-pip.done{border-color:var(--green);color:var(--green);}
+#target-selector{display:none;flex-direction:column;align-items:center;gap:7px;width:100%;}
+#target-selector.visible{display:flex;}
+#target-label{font-size:clamp(6px,1.8vw,8px);color:var(--gold);letter-spacing:1px;}
+#target-btn-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;}
+.target-btn{
+  font-family:var(--font);font-size:clamp(6px,1.7vw,7px);cursor:pointer;
+  border:2px solid var(--gold);background:#111;color:var(--gold);
+  padding:9px 14px;box-shadow:2px 2px 0 #000;letter-spacing:1px;transition:background .1s;
+}
+.target-btn:hover{background:#1e1a00;}
 
-/* ─── GAME OVER ─── */
-#gameover{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:clamp(12px,3vw,20px);z-index:400;padding:20px;}
-#gameover.on{display:flex;}
-#go-banner{background:var(--question);border:4px solid #000;box-shadow:6px 6px 0 #000;padding:16px 24px;text-align:center;position:relative;}
-#go-banner::before{content:'';position:absolute;top:3px;left:3px;right:3px;height:6px;background:rgba(255,255,255,.25);}
-#go-title{font-size:clamp(12px,4vw,22px);letter-spacing:2px;color:#000;}
-#go-sub{font-size:clamp(6px,1.8vw,8px);color:rgba(0,0,0,.7);margin-top:6px;letter-spacing:1px;}
-.go-lose-t{color:var(--red2);}
-#go-scores{background:var(--hud-bg);border:4px solid #000;box-shadow:4px 4px 0 #000;padding:14px 20px;min-width:min(240px,80vw);font-size:clamp(7px,2.2vw,9px);color:#fff;line-height:2.5;text-align:center;text-shadow:var(--ts);}
-.go-btn{font-family:var(--font);font-size:clamp(7px,2.2vw,10px);cursor:pointer;background:var(--green-pipe);color:#fff;border:3px solid #000;box-shadow:5px 5px 0 #000;padding:clamp(10px,2.5vw,14px) clamp(16px,4vw,24px);letter-spacing:1px;text-transform:uppercase;transition:filter .1s,transform .08s;}
-.go-btn:hover{filter:brightness(1.15);}
-.go-btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #000;}
-.wc{position:fixed;pointer-events:none;z-index:450;font-size:16px;animation:wcf linear forwards;}
-@keyframes wcf{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
+/* ── SHOP SECTION ── */
+#shop-section{
+  width:100%;border-top:1px solid #1a1a1a;padding-top:10px;
+  display:none;
+}
+#shop-section.visible{display:block;}
+.shop-hint{font-size:clamp(5px,1.3vw,6px);color:#7a6000;text-align:center;margin-bottom:8px;letter-spacing:1px;}
 
-/* ─── SETTINGS ─── */
-#settings-overlay{position:fixed;inset:0;background:rgba(0,0,128,.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;padding:20px;}
-#settings-overlay.on{display:flex;}
-.scard{background:var(--question);border:4px solid #000;box-shadow:6px 6px 0 #000;padding:20px;width:100%;max-width:min(360px,calc(100vw - 32px));position:relative;}
-.scard::before{content:'';position:absolute;top:3px;left:3px;right:3px;height:6px;background:rgba(255,255,255,.25);}
-.sttl{font-size:clamp(8px,2.3vw,11px);color:#000;letter-spacing:2px;margin-bottom:16px;margin-top:4px;}
-.srow{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:clamp(5px,1.5vw,7px);color:#000;}
-.tgb{font-family:var(--font);font-size:clamp(5px,1.3vw,6px);background:var(--brick);color:#fff;border:3px solid #000;padding:5px 10px;cursor:pointer;box-shadow:3px 3px 0 #000;transition:background .15s;letter-spacing:1px;}
-.tgb:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
-.tgb.on{background:var(--green-pipe);}
-.sdiv{border:none;border-top:2px solid rgba(0,0,0,.2);margin:12px 0;}
-.sclose{font-family:var(--font);font-size:7px;cursor:pointer;padding:10px;width:100%;text-align:center;background:var(--red);color:#fff;border:3px solid #000;box-shadow:3px 3px 0 #000;letter-spacing:1px;transition:filter .1s,transform .08s;}
-.sclose:hover{filter:brightness(1.15);}
-.sclose:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000;}
-::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:rgba(0,0,0,.3);}::-webkit-scrollbar-thumb{background:var(--brick-dark);}
+/* ── LOG SECTION — hidden by default ── */
+#log-section{
+  width:100%;max-width:min(860px,calc(100vw - 16px));
+  background:rgba(6,6,6,.88);border:2px solid #1a1a1a;
+  padding:clamp(8px,2vw,12px);display:none;
+}
+#log-section.visible{display:block;}
+#log-title{font-size:clamp(5px,1.4vw,7px);color:var(--gold);margin-bottom:8px;letter-spacing:2px;}
+#move-log{max-height:clamp(70px,12vh,100px);overflow-y:auto;font-size:clamp(5px,1.2vw,6px);color:#555;line-height:2.4;scrollbar-width:thin;scrollbar-color:#333 transparent;}
+#move-log p{border-bottom:1px solid #0f0f0f;padding:1px 0;}
+
+/* ── GAME OVER ── */
+#gameover-overlay{position:fixed;inset:0;background:rgba(0,0,0,.96);display:none;flex-direction:column;align-items:center;justify-content:center;gap:clamp(12px,3vw,20px);z-index:100;padding:20px;}
+#gameover-overlay.visible{display:flex;}
+#gameover-title{font-size:clamp(14px,5vw,26px);text-align:center;}
+.win-text{color:var(--gold);text-shadow:5px 5px 0 #6b4c00,0 0 30px var(--gold);animation:pulse 1.2s ease-in-out infinite alternate;}
+.lose-text{color:var(--red);text-shadow:4px 4px 0 #5a0000;}
+@keyframes pulse{to{text-shadow:5px 5px 0 #6b4c00,0 0 50px var(--gold),0 0 80px rgba(255,215,0,0.3);}}
+#gameover-scores{font-size:clamp(6px,1.8vw,9px);color:#ccc;text-align:center;line-height:2.8;}
+button.ui-btn{font-family:var(--font);font-size:clamp(8px,2.5vw,10px);cursor:pointer;border:none;padding:clamp(11px,2.5vw,14px) clamp(16px,4vw,22px);box-shadow:4px 4px 0 #000;text-transform:uppercase;transition:transform .06s,box-shadow .06s;}
+button.ui-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
+.btn-yellow-ui{background:var(--gold);color:#1a1a1a;}.btn-yellow-ui:hover{filter:brightness(1.1);}
+
+/* ── SETTINGS OVERLAY ── */
+#settings-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.92);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;z-index:200;padding:20px;
+}
+#settings-overlay.visible{display:flex;}
+.settings-card{
+  background:#0d0d0d;border:3px solid var(--gold);
+  box-shadow:6px 6px 0 #000;padding:22px;
+  width:100%;max-width:min(420px,calc(100vw - 32px));
+}
+.settings-title{font-size:clamp(9px,2.5vw,12px);color:var(--gold);letter-spacing:2px;margin-bottom:18px;text-align:center;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:clamp(6px,1.6vw,8px);color:#aaa;}
+.toggle-btn{
+  font-family:var(--font);font-size:clamp(5px,1.4vw,7px);
+  background:#1a1a1a;color:#888;border:2px solid #333;
+  padding:6px 12px;cursor:pointer;letter-spacing:1px;
+}
+.toggle-btn.on{background:#003a00;color:var(--green);border-color:#005a00;}
+.settings-divider{border:none;border-top:1px solid #1e1e1e;margin:14px 0;}
+.settings-subtitle{font-size:clamp(6px,1.5vw,7px);color:#555;letter-spacing:2px;margin-bottom:12px;}
+.promo-row{display:flex;gap:8px;}
+.promo-row input{
+  background:#060606;border:2px solid #333;color:#fff;
+  font-family:var(--font);font-size:clamp(7px,2vw,9px);
+  padding:10px;flex:1;outline:none;text-transform:uppercase;letter-spacing:3px;
+}
+.promo-row input:focus{border-color:var(--gold);}
+.promo-row button{
+  font-family:var(--font);font-size:clamp(6px,1.6vw,8px);
+  background:#7a5000;color:var(--gold);border:none;
+  padding:10px 14px;cursor:pointer;box-shadow:2px 2px 0 #000;letter-spacing:1px;
+}
+.promo-row button:hover{filter:brightness(1.2);}
+#promo-result{font-size:clamp(5px,1.4vw,7px);color:var(--green);min-height:14px;margin-top:6px;letter-spacing:1px;}
+#promo-result.err{color:var(--red);}
 </style>
 </head>
 <body>
-
-<div class="bg-c" style="left:9%;animation-duration:7s;animation-delay:0s;">🪙</div>
-<div class="bg-c" style="left:24%;animation-duration:9s;animation-delay:2s;">🪙</div>
-<div class="bg-c" style="left:46%;animation-duration:6s;animation-delay:1s;">🪙</div>
-<div class="bg-c" style="left:68%;animation-duration:11s;animation-delay:3s;">🪙</div>
-<div class="bg-c" style="left:83%;animation-duration:8s;animation-delay:.5s;">🪙</div>
-<div class="bg-c" style="left:34%;animation-duration:10s;animation-delay:4s;">⭐</div>
-<div class="bg-c" style="left:76%;animation-duration:7s;animation-delay:1.5s;">⭐</div>
-
-<!-- HUD -->
-<div id="hud">
-  <div class="hb">
-    <div class="hl">STATUS</div>
-    <div class="hv" id="hud-conn" style="color:#aaa;font-size:clamp(5px,1.5vw,7px);">...</div>
-  </div>
-  <div class="hsep"></div>
-  <div class="coin-hud">
-    <div class="cs"></div>
-    <span id="hud-phase" style="font-size:clamp(5px,1.5vw,7px);color:#fff;text-shadow:1px 1px 0 #000;">LOADING</span>
-  </div>
-  <div class="hsep"></div>
-  <div class="hb">
-    <div class="hl">GAME</div>
-    <div class="hv" style="font-size:clamp(4px,1.1vw,6px);color:rgba(255,255,255,.4);">VORTEX</div>
-  </div>
-  <button id="settings-btn" onclick="openSettings()">?</button>
+<div id="conn-bar">
+  <span id="conn-text"><span class="spinner"></span>LOADING BATTLE...</span>
+  <span style="font-size:clamp(4px,1vw,5px);color:#555;letter-spacing:1px;opacity:0.7;">BY NETHINDU THAMINDA</span>
+  <button id="settings-btn" onclick="openSettings()">⚙ SETTINGS</button>
 </div>
-
-<!-- SEA WORLD -->
-<div id="sea-world">
-  <canvas id="sea-canvas"></canvas>
-  <div id="zoom-strip">
-    <button class="zb" onclick="doZoom(1.25)">+</button>
-    <div id="zoom-pct">100%</div>
-    <button class="zb" onclick="doZoom(0.8)">−</button>
-    <button class="zb" onclick="resetView()" style="font-size:9px;">⌂</button>
-  </div>
-</div>
-
-<!-- BOTTOM PANEL -->
-<div id="panel"><div id="pi">
-
-  <div id="pb">
-    <span id="pt" class="pt-y">🍄 WAITING FOR PLAYERS...</span>
-    <div id="sb"></div>
-  </div>
-
-  <div id="rp"></div>
-
-  <div id="cb">
-    <!-- RPS -->
-    <div class="qc">
-      <div class="cl">⚔ RPS BATTLE</div>
-      <div class="rr">
-        <button class="rb" id="btn-rock" disabled onclick="sendRPS('rock')"><span class="ri">🪨</span><span class="rl">ROCK</span></button>
-        <button class="rb" id="btn-paper" disabled onclick="sendRPS('paper')"><span class="ri">📄</span><span class="rl">PAPER</span></button>
-        <button class="rb" id="btn-scissors" disabled onclick="sendRPS('scissors')"><span class="ri">✂</span><span class="rl">SCIS</span></button>
-      </div>
+<div id="main">
+  <div id="islands-row"></div>
+  <div id="controls">
+    <div id="phase-text" class="text-yellow">WAITING...</div>
+    <div id="rps-waiting-row" class="rps-waiting-row"></div>
+    <div id="flash-msg"></div>
+    <div class="section-label">▸ ROCK · PAPER · SCISSORS</div>
+    <div class="btn-row" id="rps-btns">
+      <button class="game-btn btn-rps" id="btn-rock" disabled onclick="sendRPS('rock')">
+        <canvas class="btn-icon" id="icon-rock"></canvas>
+        <span class="btn-label">🪨 ROCK</span>
+      </button>
+      <button class="game-btn btn-rps" id="btn-paper" disabled onclick="sendRPS('paper')">
+        <canvas class="btn-icon" id="icon-paper"></canvas>
+        <span class="btn-label">📄 PAPER</span>
+      </button>
+      <button class="game-btn btn-rps" id="btn-scissors" disabled onclick="sendRPS('scissors')">
+        <canvas class="btn-icon" id="icon-scissors"></canvas>
+        <span class="btn-label">✂ SCISSORS</span>
+      </button>
+    </div>
+    <div id="target-selector">
+      <div id="target-label">🎯 SELECT TARGET:</div>
+      <div id="target-btn-row"></div>
+    </div>
+    <div class="section-label" id="action-label" style="display:none;">▸ CHOOSE ACTION</div>
+    <div class="btn-row" id="action-btns" style="display:none;">
+      <button class="game-btn btn-action" id="btn-cannon" disabled onclick="pickAction('cannon',false)">
+        <canvas class="btn-icon" id="icon-cannon"></canvas>
+        <span class="btn-label">💣 CANNON<small>Remove shield OR destroy quadrant</small></span>
+      </button>
+      <button class="game-btn btn-action" id="btn-slicer" disabled onclick="pickAction('slicer',false)">
+        <canvas class="btn-icon" id="icon-slicer"></canvas>
+        <span class="btn-label">⚔ SLICER<small>Split+delete quadrant (BLOCKED by shield)</small></span>
+      </button>
+      <button class="game-btn btn-action" id="btn-shield" disabled onclick="sendAction('shield',null,false)">
+        <canvas class="btn-icon" id="icon-shield"></canvas>
+        <span class="btn-label">🛡 SHIELD<small>Block slicers + get item</small></span>
+      </button>
+      <button class="game-btn btn-store" id="btn-store" disabled onclick="sendAction('store',null,false)">
+        <canvas class="btn-icon" id="icon-store"></canvas>
+        <span class="btn-label">📦 BANK IT<small>Store cannon+slicer</small></span>
+      </button>
+    </div>
+    <div class="section-label" id="inv-label" style="display:none;">▸ USE FROM INVENTORY</div>
+    <div class="btn-row" id="inv-btns" style="display:none;">
+      <button class="game-btn btn-inv" id="btn-inv-cannon" disabled onclick="pickAction('cannon',true)">
+        <canvas class="btn-icon" id="icon-inv-cannon"></canvas>
+        <span class="btn-label">💣 USE CANNON<small id="inv-cannon-count">×0 stored</small></span>
+      </button>
+      <button class="game-btn btn-inv" id="btn-inv-slicer" disabled onclick="pickAction('slicer',true)">
+        <canvas class="btn-icon" id="icon-inv-slicer"></canvas>
+        <span class="btn-label">⚔ USE SLICER<small id="inv-slicer-count">×0 stored</small></span>
+      </button>
     </div>
 
-    <!-- Buy -->
-    <div class="qc" id="buy-section" style="display:none;">
-      <div class="cl">🪙 BUY ITEMS</div>
-      <div class="ar">
-        <button class="ab b-buy" id="btn-buy-cannon" disabled onclick="doAction('buy_cannon',false)"><span class="ai">💣</span><span class="al">CANNON</span><span class="as">Store · strip shield</span></button>
-        <button class="ab b-buy" id="btn-buy-slicer" disabled onclick="doAction('buy_slicer',false)"><span class="ai">⚔</span><span class="al">SLICER</span><span class="as">Store · cut quad</span></button>
-        <button class="ab b-shld" id="btn-buy-shield" disabled onclick="doAction('buy_shield',false)"><span class="ai">🛡</span><span class="al">SHIELD</span><span class="as">Instant · block</span></button>
-      </div>
-    </div>
-
-    <!-- Use -->
-    <div class="qc" id="use-section" style="display:none;">
-      <div class="cl">🎯 USE ITEMS</div>
-      <div class="ar">
-        <button class="ab b-use" id="btn-use-cannon" disabled onclick="pickTarget('cannon')"><span class="ai">💣</span><span class="al">CANNON</span><span class="as" id="inv-cannon-lbl">×0</span></button>
-        <button class="ab b-use" id="btn-use-slicer" disabled onclick="pickTarget('slicer')"><span class="ai">⚔</span><span class="al">SLICER</span><span class="as" id="inv-slicer-lbl">×0</span></button>
-      </div>
-    </div>
-
-    <!-- Storage -->
-    <div class="qc">
-      <div class="cl">📦 STORAGE</div>
-      <div class="ss">
-        <div class="si"><span class="si-i">💣</span><span class="si-v" id="st-cannons">0</span><span class="si-l">CANNON</span></div>
-        <div class="si"><span class="si-i">⚔</span><span class="si-v" id="st-slicers">0</span><span class="si-l">SLICER</span></div>
-        <div class="si"><span class="si-i">🛡</span><span class="si-v" id="st-shields">0</span><span class="si-l">SHIELD</span></div>
+    <!-- COIN SHOP -->
+    <div id="shop-section">
+      <div class="section-label" style="margin-bottom:8px;">▸ 🪙 COIN SHOP (1 coin each)</div>
+      <div class="shop-hint">WIN RPS → EARN COINS → BUY WEAPONS!</div>
+      <div class="btn-row">
+        <button class="game-btn btn-shop" id="btn-buy-cannon" disabled onclick="buyItem('buy_cannon')">
+          <canvas class="btn-icon" id="icon-buy-cannon"></canvas>
+          <span class="btn-label">💣 BUY CANNON<small>1 🪙 coin</small></span>
+        </button>
+        <button class="game-btn btn-shop" id="btn-buy-slicer" disabled onclick="buyItem('buy_slicer')">
+          <canvas class="btn-icon" id="icon-buy-slicer"></canvas>
+          <span class="btn-label">⚔ BUY SLICER<small>1 🪙 coin</small></span>
+        </button>
+        <button class="game-btn btn-shop" id="btn-buy-shield" disabled onclick="buyItem('buy_shield')">
+          <canvas class="btn-icon" id="icon-buy-shield"></canvas>
+          <span class="btn-label">🛡 BUY SHIELD<small>1 🪙 coin</small></span>
+        </button>
       </div>
     </div>
   </div>
-
-  <!-- Target -->
-  <div id="ts">
-    <div id="tl">🎯 PICK YOUR TARGET!</div>
-    <div id="tr"></div>
-    <button class="cbtn" onclick="cancelTarget()">✕ CANCEL</button>
+  <!-- LOG HIDDEN BY DEFAULT — toggle in Settings -->
+  <div id="log-section">
+    <div id="log-title">📜 BATTLE LOG</div>
+    <div id="move-log"><p>▓ GAME STARTING...</p></div>
   </div>
-
-  <div id="flash"></div>
-  <div id="log-box"><div id="ml"><p>▸ GAME STARTING...</p></div></div>
-</div></div>
-
-<!-- RPS POPUP -->
-<div id="rps-popup">
-  <div id="rp-emo">🏆</div>
-  <div id="rp-title">RPS RESULT</div>
-  <div id="rp-sub"></div>
-  <div id="rp-chips"></div>
 </div>
 
-<!-- GAME OVER -->
-<div id="gameover">
-  <div id="go-banner"><div id="go-title">...</div><div id="go-sub"></div></div>
-  <div id="go-scores"></div>
-  <button class="go-btn" onclick="location.href='/'">▶ PLAY AGAIN</button>
+<div id="gameover-overlay">
+  <div id="gameover-title">...</div>
+  <div id="gameover-scores"></div>
+  <button class="ui-btn btn-yellow-ui" onclick="location.href='/'">↩ PLAY AGAIN</button>
 </div>
 
-<!-- SETTINGS -->
+<!-- SETTINGS OVERLAY -->
 <div id="settings-overlay">
-  <div class="scard">
-    <div class="sttl">⚙ OPTIONS</div>
-    <div class="srow"><span>📜 BATTLE LOG</span><button class="tgb" id="log-tog" onclick="toggleLog()">OFF</button></div>
-    <hr class="sdiv"/>
-    <button class="sclose" onclick="closeSettings()">✕ CLOSE</button>
+  <div class="settings-card">
+    <div class="settings-title">⚙ SETTINGS</div>
+    <div class="settings-row">
+      <span>📜 BATTLE LOG</span>
+      <button class="toggle-btn" id="toggle-log-btn" onclick="toggleLog()">OFF</button>
+    </div>
+    <hr class="settings-divider"/>
+    <div class="settings-subtitle">🎁 PROMO CODE</div>
+    <div style="font-size:clamp(4px,1.1vw,5px);color:#555;letter-spacing:1px;margin-bottom:6px;">TRY: EBOX · VORTEX2025 · BATTLEPASS</div>
+    <div class="promo-row">
+      <input type="text" id="promo-input" placeholder="ENTER CODE" maxlength="16" autocomplete="off"/>
+      <button onclick="redeemPromo()">REDEEM</button>
+    </div>
+    <div id="promo-result"></div>
+    <hr class="settings-divider"/>
+    <button class="ui-btn" style="background:#1a1a1a;color:#888;border:2px solid #333;width:100%;font-size:clamp(6px,1.8vw,8px);margin-top:4px;" onclick="closeSettings()">✕ CLOSE</button>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════
-// VORTEX ISLANDS — Mario Theme Game Client
-// ═══════════════════════════════════════════════════════════════════
-const CELL_COLORS={grass:'#5aad3e',dark_grass:'#3a8a28',stone:'#9aacb0',dirt:'#a0724a',sand:'#d4b87a'};
-const params=new URLSearchParams(location.search);
-const GAME_ID=params.get('gameId'),MY_NAME=params.get('username');
-if(!GAME_ID||!MY_NAME) location.href='/';
-const API='/api/game';
-let gameState=null,myRPSSubmitted=false,pendingActionType=null;
-let pollInterval=null,gameOver=false,failCount=0,logVisible=false,isPollRunning=false;
-let seaScale=1.0,seaOffX=0,seaOffY=0;
-let isDragging=false,dragStartX=0,dragStartY=0,dragOffX=0,dragOffY=0,pinchDist=0;
-const islandCache={};
+// ══ Cell colours ══════════════════════════════════════
+const CELL_COLORS = {
+  sea:'#1a6fad', grass:'#5aad3e', dark_grass:'#3a8a28',
+  stone:'#8a9aa0', dirt:'#9a6b3e', sand:'#d4b06a'
+};
 
-async function safeJson(r){const t=await r.text();try{return JSON.parse(t);}catch{return{error:'SERVER_ERROR'};}}
-async function ft(url,opts,ms=10000){const c=new AbortController();const tid=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{...opts,signal:c.signal});clearTimeout(tid);return r;}catch(e){clearTimeout(tid);throw e;}}
-async function post(act,body){return safeJson(await ft(`${API}?action=${act}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}));}
-async function getState(){return safeJson(await ft(`${API}?action=game&gameId=${GAME_ID}`));}
-
-function openSettings(){document.getElementById('settings-overlay').classList.add('on');}
-function closeSettings(){document.getElementById('settings-overlay').classList.remove('on');}
-function toggleLog(){logVisible=!logVisible;document.getElementById('log-box').classList.toggle('on',logVisible);const btn=document.getElementById('log-tog');btn.classList.toggle('on',logVisible);btn.textContent=logVisible?'ON':'OFF';}
-
-function setConn(state,msg){const el=document.getElementById('hud-conn');el.style.color=state==='ok'?'#43b800':state==='err'?'#ff6655':'#ffd700';el.textContent=msg;}
-
-function spawnCoinRain(){for(let i=0;i<28;i++){const el=document.createElement('div');el.className='wc';el.textContent='🪙';el.style.left=Math.random()*100+'vw';el.style.animationDuration=(1.5+Math.random()*2)+'s';el.style.animationDelay=(Math.random()*1)+'s';document.body.appendChild(el);setTimeout(()=>el.remove(),4000);}}
-
-// ── RENDERING ──
-const seaWorld=document.getElementById('sea-world');
-const seaCanvas=document.getElementById('sea-canvas');
-const seaCtx=seaCanvas.getContext('2d');
-
-function getIslandPos(idx,total){
-  const L={1:[{x:.5,y:.5}],2:[{x:.28,y:.5},{x:.72,y:.5}],3:[{x:.5,y:.22},{x:.22,y:.72},{x:.78,y:.72}],4:[{x:.25,y:.28},{x:.75,y:.28},{x:.25,y:.72},{x:.75,y:.72}],5:[{x:.5,y:.2},{x:.2,y:.5},{x:.8,y:.5},{x:.3,y:.78},{x:.7,y:.78}],6:[{x:.25,y:.2},{x:.75,y:.2},{x:.15,y:.55},{x:.85,y:.55},{x:.35,y:.82},{x:.65,y:.82}]};
-  const t=Math.min(6,Math.max(1,total));return (L[t]||L[6])[idx%(L[t]||L[6]).length];
+// ══ HD island sizing — scales DOWN as player count grows ══
+// 2 players = huge, 3-4 = medium, 5-6 = small
+let _playerCount = 2;
+function getIslandSize(playerCount) {
+  const pc = playerCount || _playerCount || 2;
+  const vw = window.innerWidth;
+  // Base size tiers per player count
+  const tiers = {
+    2: [ [1100,560,280,17,17],[800,448,224,14,14],[600,384,192,12,12],[420,320,160,10,10],[0,240,120,7,7] ],
+    3: [ [1100,420,210,13,13],[800,336,168,10,10],[600,288,144,9,9 ],[420,240,120,7,7 ],[0,192,96, 6,6 ] ],
+    4: [ [1100,320,160,10,10],[800,256,128,8,8  ],[600,224,112,7,7 ],[420,192,96, 6,6 ],[0,160,80, 5,5 ] ],
+    5: [ [1100,256,128,8,8  ],[800,224,112,7,7  ],[600,192,96, 6,6 ],[420,160,80, 5,5 ],[0,128,64, 4,4 ] ],
+    6: [ [1100,224,112,7,7  ],[800,192,96, 6,6  ],[600,160,80, 5,5 ],[420,128,64, 4,4 ],[0,112,56, 3,3 ] ],
+  };
+  const tier = tiers[Math.min(6, Math.max(2, pc))];
+  for (const [minVw, w, h, cw, ch] of tier) {
+    if (vw >= minVw) return { w, h, cw, ch };
+  }
+  return { w:192, h:96, cw:6, ch:6 };
 }
-function getIslandDrawSize(){
-  const vw=seaWorld.clientWidth,vh=seaWorld.clientHeight;
-  const base=Math.min(vw,vh);
-  const pc=gameState?Math.max(2,gameState.players.length):2;
-  const f={2:.28,3:.22,4:.18,5:.15,6:.13}[pc]||.18;
-  const w=Math.floor(base*f);return{w,h:Math.floor(w*.5)};
+const GW = 32, GH = 16; // updated to match new grid
+
+// ══ Pixel-art icon drawing ═════════════════════════════
+function setIconSize(canvas) {
+  const s = Math.max(28, Math.min(44, Math.floor(window.innerWidth * 0.07)));
+  canvas.width = s; canvas.height = s;
+}
+function px(ctx,x,y,col,s){ ctx.fillStyle=col; ctx.fillRect(x*s,y*s,s,s); }
+function drawRock(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/6),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);[[0,0,1,1,1,0],[0,1,1,2,1,1],[1,1,1,1,1,1],[0,1,1,1,1,0]].forEach((row,r)=>row.forEach((v,cc)=>{if(v===1)px(x,cc,r,'#78909c',s);if(v===2)px(x,cc,r,'#b0bec5',s);}));}
+function drawPaper(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/8),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);for(let r=0;r<7;r++)for(let cc=1;cc<=6;cc++)px(x,cc,r,'#f5f5dc',s);for(let r=2;r<7;r+=2)for(let cc=2;cc<=5;cc++)px(x,cc,r,'#aaa',s);}
+function drawScissors(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/8),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);for(let i=0;i<5;i++){px(x,i,i,'#ccc',s);px(x,6-i,i,'#ccc',s);}for(let i=3;i<7;i++){px(x,i-2,i,'#999',s);px(x,8-i,i,'#999',s);}px(x,3,2,'#e53935',s-1);}
+function drawCannon(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/8),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);for(let cc=0;cc<7;cc++)px(x,cc,2,'#222',s);for(let cc=0;cc<6;cc++){px(x,cc,1,'#444',s);px(x,cc,3,'#444',s);}px(x,1,4,'#555',s);px(x,3,4,'#555',s);px(x,7,2,'#ffc107',s);}
+function drawShield(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/6),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);[[0,1,1,1,0],[1,1,1,1,1],[1,1,2,1,1],[1,1,2,1,1],[0,1,1,1,0],[0,0,1,0,0]].forEach((row,r)=>row.forEach((v,cc)=>{if(v===1)px(x,cc,r,'#0055cc',s);if(v===2)px(x,cc,r,'#44aaff',s);}));}
+function drawSlicer(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/8),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);for(let i=0;i<6;i++){px(x,6-i,i,'#c8e0ff',s);if(i>0)px(x,7-i,i,'#e8f4ff',s);}for(let r=5;r<=8;r++)px(x,2,r,'#8b4513',s);}
+function drawStore(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/8),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);for(let r=2;r<7;r++)for(let cc=1;cc<=6;cc++)px(x,cc,r,'#8b6914',s);for(let cc=1;cc<=6;cc++)px(x,cc,2,'#ffd700',s);for(let r=0;r<2;r++)px(x,3,r,'#fff',s);px(x,2,1,'#fff',s);px(x,4,1,'#fff',s);}
+function drawCoin(id){const c=document.getElementById(id);setIconSize(c);const s=Math.floor(c.width/6),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);[[0,0,1,1,1,0],[0,1,2,2,1,1],[1,2,1,1,2,1],[1,2,1,1,2,1],[0,1,2,2,1,1],[0,0,1,1,1,0]].forEach((row,r)=>row.forEach((v,cc)=>{if(v===1)px(x,cc,r,'#ffd700',s);if(v===2)px(x,cc,r,'#ffe066',s);}));}
+
+function initIcons() {
+  drawRock('icon-rock'); drawPaper('icon-paper'); drawScissors('icon-scissors');
+  drawCannon('icon-cannon'); drawCannon('icon-inv-cannon'); drawCannon('icon-buy-cannon');
+  drawShield('icon-shield'); drawShield('icon-buy-shield');
+  drawSlicer('icon-slicer'); drawSlicer('icon-inv-slicer'); drawSlicer('icon-buy-slicer');
+  drawStore('icon-store');
 }
 
-function buildIslandCanvas(player,state){
-  const GW=64,GH=32,sz=getIslandDrawSize(),cw=sz.w,ch=sz.h;
-  const CW=cw/GW,CH=ch/GH;
-  const oc=document.createElement('canvas');oc.width=cw;oc.height=ch;
-  const ctx=oc.getContext('2d');
-  const grid=state.grids[player];if(!grid)return oc;
-  ctx.fillStyle='#189df5';ctx.fillRect(0,0,cw,ch);
-  ctx.fillStyle='rgba(255,255,255,.12)';for(let y=0;y<ch;y+=6)ctx.fillRect(0,y,cw,2);
-  grid.forEach((row,r)=>row.forEach((cell,c)=>{
-    const col=CELL_COLORS[cell];if(!col)return;
-    ctx.fillStyle=col;ctx.fillRect(Math.floor(c*CW),Math.floor(r*CH),Math.ceil(CW),Math.ceil(CH));
-    ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(Math.floor(c*CW),Math.floor(r*CH),Math.ceil(CW*.3),Math.ceil(CH*.3));
-    ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(Math.floor(c*CW+CW*.7),Math.floor(r*CH+CH*.7),Math.ceil(CW*.3),Math.ceil(CH*.3));
+// ══ Island rendering — HD with pixel detail ════════════
+const RPS_EMOJI = { rock:'🪨', paper:'📄', scissors:'✂️' };
+function renderIslandCanvas(canvas, grid, shields, rpsChoice, rpsState, isWinner) {
+  const sz = getIslandSize(_playerCount);
+  canvas.width = sz.w; canvas.height = sz.h;
+  const CW = sz.w / GW, CH = sz.h / GH;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, sz.w, sz.h);
+
+  // Ocean
+  ctx.fillStyle = CELL_COLORS.sea;
+  ctx.fillRect(0, 0, sz.w, sz.h);
+
+  // Ocean depth gradient
+  const seaGrad = ctx.createLinearGradient(0, 0, 0, sz.h);
+  seaGrad.addColorStop(0, 'rgba(10,40,80,0.3)');
+  seaGrad.addColorStop(1, 'rgba(0,80,160,0.15)');
+  ctx.fillStyle = seaGrad;
+  ctx.fillRect(0, 0, sz.w, sz.h);
+
+  // Land cells with micro-detail
+  grid.forEach((row, r) => row.forEach((cell, c) => {
+    if (cell === 'sea') return;
+    ctx.fillStyle = CELL_COLORS[cell] || CELL_COLORS.sea;
+    ctx.fillRect(c * CW, r * CH, CW, CH);
+    // Subtle top-left highlight for 3D pixel feel
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(c * CW, r * CH, CW * 0.4, CH * 0.4);
+    // Subtle bottom-right shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(c * CW + CW * 0.6, r * CH + CH * 0.6, CW * 0.4, CH * 0.4);
   }));
-  ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=1;ctx.setLineDash([4,5]);
-  ctx.beginPath();ctx.moveTo(cw/2,0);ctx.lineTo(cw/2,ch);ctx.moveTo(0,ch/2);ctx.lineTo(cw,ch/2);ctx.stroke();ctx.setLineDash([]);
-  const ls=Math.max(5,Math.floor(CW));ctx.fillStyle='rgba(255,255,255,.18)';ctx.font=`bold ${ls}px 'Press Start 2P',monospace`;
-  ctx.fillText('1',3,ls+1);ctx.fillText('2',cw/2+3,ls+1);ctx.fillText('3',3,ch/2+ls+1);ctx.fillText('4',cw/2+3,ch/2+ls+1);
-  const shields=state.islands[player]?.shields||0;
-  if(shields>0){ctx.shadowBlur=14;const sc=['rgba(80,180,255,.9)','rgba(40,220,255,.7)','rgba(200,240,255,.5)'];for(let s=0;s<shields;s++){const ins=(shields-s)*Math.max(3,Math.floor(CW*.3));ctx.strokeStyle=sc[s];ctx.lineWidth=2;ctx.shadowColor=sc[s];ctx.strokeRect(ins+1,ins+1,cw-ins*2-2,ch-ins*2-2);}ctx.shadowBlur=0;}
-  if(state.islands[player]?.alive===false){ctx.fillStyle='rgba(180,0,0,.5)';ctx.fillRect(0,0,cw,ch);ctx.fillStyle='rgba(255,80,80,.9)';ctx.font=`bold ${Math.max(12,ch*.35)}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✕',cw/2,ch/2);ctx.textAlign='left';ctx.textBaseline='alphabetic';}
-  return oc;
-}
 
-function drawCloud(ctx,cx,cy,s){
-  ctx.fillStyle='#fff';
-  ctx.fillRect(cx,cy+s*2,s*8,s*2);ctx.fillRect(cx+s,cy+s,s*2,s*2);ctx.fillRect(cx+s*4,cy,s*3,s*3);
-  ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(cx+s,cy+s,s,s);
-}
-
-function drawSea(){
-  const W=seaWorld.clientWidth,H=seaWorld.clientHeight;
-  seaCanvas.width=W;seaCanvas.height=H;
-  const ctx=seaCtx;
-  // Sky
-  const g=ctx.createLinearGradient(0,0,0,H*.4);
-  g.addColorStop(0,'#5c94fc');g.addColorStop(1,'#a8d4ff');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.4);
-  // Clouds
-  const cs=Math.max(3,Math.floor(W/80));
-  drawCloud(ctx,W*.08,H*.07,cs);drawCloud(ctx,W*.42,H*.04,cs*1.2);drawCloud(ctx,W*.73,H*.09,cs*.9);
-  // Water
-  const wg=ctx.createLinearGradient(0,H*.35,0,H-.5);
-  wg.addColorStop(0,'#189df5');wg.addColorStop(1,'#0f7ad4');
-  ctx.fillStyle=wg;ctx.fillRect(0,H*.35,W,H*.65);
-  ctx.fillStyle='rgba(255,255,255,.05)';for(let y=H*.4;y<H-.5;y+=28)ctx.fillRect(0,y,W,3);
-  // Ground strip
-  ctx.fillStyle='#5c9e28';ctx.fillRect(0,H-5,W,3);ctx.fillStyle='#4a8020';ctx.fillRect(0,H-2,W,2);
-
-  if(!gameState)return;
-  const players=gameState.players,sz=getIslandDrawSize();
-  const waterTop=H*.35,waterH=H*.65-.5;
-
-  players.forEach((p,i)=>{
-    const pos=getIslandPos(i,players.length);
-    const worldX=pos.x*W*seaScale+seaOffX;
-    const worldY=waterTop+pos.y*waterH*seaScale+seaOffY;
-    const islandW=sz.w*seaScale,islandH=sz.h*seaScale;
-    const drawX=worldX-islandW/2,drawY=worldY-islandH/2;
-    const isAlive=gameState.islands[p]?.alive!==false;
-    const isMe=p===MY_NAME,isBot=(gameState.bots||[]).includes(p);
-
-    ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=10*seaScale;ctx.shadowOffsetY=4*seaScale;
-    const ck=p+'|'+JSON.stringify(gameState.grids[p])+'|'+(gameState.islands[p]?.shields||0)+'|'+isAlive;
-    if(!islandCache[p]||islandCache[p].key!==ck) islandCache[p]={canvas:buildIslandCanvas(p,gameState),key:ck};
-    ctx.globalAlpha=isAlive?1:.35;
-    ctx.drawImage(islandCache[p].canvas,drawX,drawY,islandW,islandH);
-    ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.globalAlpha=1;
-
-    const rc=gameState.rpsChoices||{},rw=gameState.rpsWinners||[];
-    if(rc[p]){
-      const E={rock:'🪨',paper:'📄',scissors:'✂️'};
-      ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(drawX,drawY,islandW,islandH);
-      ctx.font=`${Math.max(14,islandH*.46)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(E[rc[p]]||rc[p],drawX+islandW/2,drawY+islandH/2);ctx.textAlign='left';ctx.textBaseline='alphabetic';
-      if(rw.includes(p)){ctx.strokeStyle='#ffd700';ctx.lineWidth=3*seaScale;ctx.shadowColor='#ffd700';ctx.shadowBlur=18;ctx.strokeRect(drawX+1,drawY+1,islandW-2,islandH-2);ctx.shadowBlur=0;}
+  // Wave shimmer on sea cells
+  grid.forEach((row, r) => row.forEach((cell, c) => {
+    if (cell === 'sea') {
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(c * CW, r * CH + CH * 0.4, CW, 1);
     }
-    if(isMe){ctx.strokeStyle='rgba(67,184,0,.55)';ctx.lineWidth=2.5*seaScale;ctx.strokeRect(drawX-3,drawY-3,islandW+6,islandH+6);}
+  }));
 
-    // Name tag (brick block style)
-    const tfsz=Math.max(5,Math.round(7*seaScale));
-    ctx.font=`${tfsz}px 'Press Start 2P',monospace`;ctx.textAlign='center';
-    const ns=(isBot?'🤖':'🧑')+' '+p;
-    const tw=ctx.measureText(ns).width;
-    const tx=drawX+islandW/2,ty=drawY-tfsz*1.5;
-    ctx.fillStyle=isMe?'#2d8a26':isBot?'#000080':'#b44a06';
-    ctx.fillRect(tx-tw/2-6,ty-tfsz-2,tw+12,tfsz+8);
-    ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(tx-tw/2-6,ty-tfsz-2,tw+12,4);
-    ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.strokeRect(tx-tw/2-6,ty-tfsz-2,tw+12,tfsz+8);
-    ctx.fillStyle='#fff';ctx.fillText(ns,tx,ty);
+  // Quadrant divider lines (dashed)
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 5]);
+  ctx.beginPath();
+  ctx.moveTo(sz.w / 2, 0); ctx.lineTo(sz.w / 2, sz.h);
+  ctx.moveTo(0, sz.h / 2); ctx.lineTo(sz.w, sz.h / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
-    // HP bar
-    const island=gameState.islands[p];
-    const hp=island?Math.max(0,4-(island.quadrants?.length||0)):4;
-    const bw=islandW*.75,bh=Math.max(5,6*seaScale);
-    const bx=drawX+(islandW-bw)/2,by=drawY+islandH+4*seaScale;
-    ctx.fillStyle='#000';ctx.fillRect(bx-1,by-1,bw+2,bh+2);
-    ctx.fillStyle='#333';ctx.fillRect(bx,by,bw,bh);
-    ctx.fillStyle=hp>=3?'#43b800':hp===2?'#ffd700':'#e52222';ctx.fillRect(bx,by,bw*(hp/4),bh);
-    ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(bx,by,bw*(hp/4),Math.max(2,bh*.35));
+  // Quadrant labels
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  const labelSz = Math.max(7, Math.floor(CW * 0.7));
+  ctx.font = `bold ${labelSz}px monospace`;
+  ctx.fillText('1', 4, labelSz + 2);
+  ctx.fillText('2', sz.w / 2 + 4, labelSz + 2);
+  ctx.fillText('3', 4, sz.h / 2 + labelSz + 2);
+  ctx.fillText('4', sz.w / 2 + 4, sz.h / 2 + labelSz + 2);
 
-    // Hearts + shields
-    const sy=by+bh+Math.max(8,11*seaScale);
-    const hsz=Math.max(4,Math.round(5.5*seaScale));
-    ctx.font=`${hsz}px 'Press Start 2P',monospace`;ctx.fillStyle='rgba(255,255,255,.85)';ctx.textAlign='center';
-    ctx.fillText('❤'.repeat(hp)+'🖤'.repeat(4-hp),drawX+islandW/2,sy);
-    const sh=island?.shields||0;
-    if(sh>0) ctx.fillText('🛡×'+sh,drawX+islandW/2,sy+Math.max(8,10*seaScale));
-    ctx.textAlign='left';
+  // Shield rings
+  if (shields > 0) {
+    const shCols = ['rgba(0,168,255,0.95)','rgba(0,230,255,0.75)','rgba(180,245,255,0.6)'];
+    ctx.shadowBlur = 16;
+    for (let s = 0; s < shields; s++) {
+      const inset = (shields - s) * Math.max(4, Math.floor(CW * 0.4));
+      ctx.strokeStyle = shCols[s];
+      ctx.lineWidth = Math.max(2, Math.floor(CW * 0.25));
+      ctx.shadowColor = shCols[s];
+      ctx.strokeRect(inset + 1, inset + 1, sz.w - inset * 2 - 2, sz.h - inset * 2 - 2);
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  // ── RPS pick overlay ──────────────────────────────────
+  if (rpsChoice) {
+    const emoji = RPS_EMOJI[rpsChoice] || rpsChoice;
+    const fontSize = Math.max(18, Math.floor(sz.w * 0.28));
+    // Semi-transparent overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, 0, sz.w, sz.h);
+    ctx.font = `${fontSize}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, sz.w / 2, sz.h / 2);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    // Winner glow
+    if (rpsState === 'winner') {
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 20;
+      ctx.strokeRect(2, 2, sz.w - 4, sz.h - 4);
+      ctx.shadowBlur = 0;
+      // WIN label
+      ctx.fillStyle = '#ffd700';
+      ctx.font = `bold ${Math.max(8, Math.floor(sz.w * 0.08))}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('WIN!', sz.w / 2, sz.h - Math.max(8, Math.floor(sz.h * 0.1)));
+      ctx.textAlign = 'left';
+    } else if (rpsState === 'loser') {
+      ctx.strokeStyle = '#ff1744';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#ff1744';
+      ctx.shadowBlur = 10;
+      ctx.strokeRect(2, 2, sz.w - 4, sz.h - 4);
+      ctx.shadowBlur = 0;
+      // X over losers
+      ctx.strokeStyle = 'rgba(255,23,68,0.6)';
+      ctx.lineWidth = Math.max(2, sz.w / 40);
+      ctx.beginPath();
+      ctx.moveTo(sz.w * 0.1, sz.h * 0.1); ctx.lineTo(sz.w * 0.9, sz.h * 0.9);
+      ctx.moveTo(sz.w * 0.9, sz.h * 0.1); ctx.lineTo(sz.w * 0.1, sz.h * 0.9);
+      ctx.stroke();
+    }
+  }
+}
+
+// ══ Setup ═════════════════════════════════════════════
+const params = new URLSearchParams(location.search);
+const GAME_ID = params.get('gameId'), MY_NAME = params.get('username');
+if (!GAME_ID || !MY_NAME) location.href = '/';
+const API = '/api/game';
+let gameState = null, myRPSSubmitted = false, pendingAction = null;
+let pollInterval = null, gameOver = false, failCount = 0;
+let logVisible = false;
+
+// ── Fetch with timeout to prevent hanging requests ──
+async function fetchWithTimeout(url, opts, ms) {
+  ms = ms || 8000;
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { ...opts, signal: ctrl.signal });
+    clearTimeout(tid);
+    return r;
+  } catch(e) { clearTimeout(tid); throw e; }
+}
+async function post(action, body) {
+  const r = await fetchWithTimeout(`${API}?action=${action}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+async function getState() {
+  return (await fetchWithTimeout(`${API}?action=game&gameId=${GAME_ID}`)).json();
+}
+
+// ══ Settings ═══════════════════════════════════════════
+function openSettings() { document.getElementById('settings-overlay').classList.add('visible'); }
+function closeSettings() { document.getElementById('settings-overlay').classList.remove('visible'); }
+function toggleLog() {
+  logVisible = !logVisible;
+  const log = document.getElementById('log-section');
+  const btn = document.getElementById('toggle-log-btn');
+  log.classList.toggle('visible', logVisible);
+  btn.classList.toggle('on', logVisible);
+  btn.textContent = logVisible ? 'ON' : 'OFF';
+}
+
+async function redeemPromo() {
+  const code = document.getElementById('promo-input').value.trim().toUpperCase();
+  if (!code) return;
+  const res = document.getElementById('promo-result');
+  res.className = '';
+  const data = await post('redeem_promo', { gameId: GAME_ID, username: MY_NAME, code });
+  if (data.error) {
+    res.textContent = '✗ ' + data.error;
+    res.className = 'err';
+  } else {
+    res.textContent = '✓ ' + data.desc + ` COINS: ${data.coins}`;
+    if (data.state) updateUI(data.state);
+    document.getElementById('promo-input').value = '';
+  }
+}
+
+// ══ Render islands ════════════════════════════════════
+function renderIslands(state) {
+  // Update global player count for island sizing
+  _playerCount = (state.alivePlayers || state.players || []).length || 2;
+  const row = document.getElementById('islands-row');
+  const bots = state.bots || [];
+  // Build RPS display info
+  const rpsChoices = state.rpsChoices || {};
+  const rpsWinners = state.rpsWinners || (state.rpsWinner ? [state.rpsWinner] : []);
+  const showRPS = Object.keys(rpsChoices).length > 0;
+  state.players.forEach(u => {
+    const isAlive = state.islands[u] && state.islands[u].alive !== false;
+    const isMe = u === MY_NAME;
+    const isBot = bots.includes(u);
+    const inv = state.islands[u]?.inventory || { cannons:0, slicers:0 };
+    const coins = state.islands[u]?.coins || 0;
+    let panel = document.getElementById('panel-' + u);
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'island-panel'; panel.id = 'panel-' + u;
+      const sz = getIslandSize();
+      panel.innerHTML = `
+        <div class="island-name-tag" id="nametag-${u}">${isBot?'🤖':'🧑'} ${u}</div>
+        <canvas class="island-canvas" id="canvas-${u}" width="${sz.w}" height="${sz.h}"></canvas>
+        <div class="island-stats" id="stats-${u}">...</div>
+        <div class="inv-badge" id="inv-${u}" style="display:none">📦 💣×0 ⚔×0</div>
+        <div class="coin-badge" id="coins-${u}" style="display:none">🪙 0</div>`;
+      row.appendChild(panel);
+    }
+    if (!isAlive) panel.classList.add('eliminated');
+    else panel.classList.remove('eliminated');
+
+    const tag = document.getElementById('nametag-' + u);
+    if (tag) tag.className = isBot ? 'island-name-tag bot-tag' : 'island-name-tag' + (isMe ? ' my-tag' : '');
+
+    const canvas = document.getElementById('canvas-' + u);
+    if (canvas && state.grids[u]) {
+      const choice = rpsChoices[u] || null;
+      let rpsState = null;
+      if (showRPS && choice) {
+        rpsState = rpsWinners.includes(u) ? 'winner' : 'loser';
+      }
+      renderIslandCanvas(canvas, state.grids[u], state.islands[u]?.shields||0, choice, rpsState);
+    }
+
+    const statsEl = document.getElementById('stats-' + u);
+    if (statsEl && state.islands[u]) {
+      if (!isAlive) statsEl.innerHTML = '<span class="elim-badge">💀 ELIMINATED</span>';
+      else {
+        const parts = 4 - (state.islands[u].quadrants?.length||0);
+        const sh = state.islands[u].shields||0;
+        statsEl.innerHTML = `❤ ${parts}/4 &nbsp;🛡 ${sh}/3 &nbsp;🏆 ${state.scores[u]}`;
+      }
+    }
+    const invEl = document.getElementById('inv-' + u);
+    if (invEl) {
+      invEl.style.display = isMe ? 'block' : 'none';
+      invEl.textContent = `📦 💣×${inv.cannons} ⚔×${inv.slicers}`;
+    }
+    const coinsEl = document.getElementById('coins-' + u);
+    if (coinsEl) {
+      coinsEl.style.display = isMe ? 'block' : 'none';
+      coinsEl.textContent = `🪙 ${coins} coin${coins!==1?'s':''}`;
+    }
   });
 }
 
-// ── Pan/Zoom ──
-function doZoom(factor){
-  const W=seaWorld.clientWidth,H=seaWorld.clientHeight;
-  const prev=seaScale;seaScale=Math.max(.3,Math.min(4,seaScale*factor));
-  const cx=W/2,cy=H/2;seaOffX=cx-(cx-seaOffX)*(seaScale/prev);seaOffY=cy-(cy-seaOffY)*(seaScale/prev);
-  document.getElementById('zoom-pct').textContent=Math.round(seaScale*100)+'%';drawSea();
-}
-function resetView(){seaScale=1;seaOffX=0;seaOffY=0;document.getElementById('zoom-pct').textContent='100%';drawSea();}
-seaWorld.addEventListener('mousedown',e=>{if(e.target.classList.contains('zb'))return;isDragging=true;dragStartX=e.clientX;dragStartY=e.clientY;dragOffX=seaOffX;dragOffY=seaOffY;});
-window.addEventListener('mousemove',e=>{if(!isDragging)return;seaOffX=dragOffX+(e.clientX-dragStartX);seaOffY=dragOffY+(e.clientY-dragStartY);drawSea();});
-window.addEventListener('mouseup',()=>{isDragging=false;});
-seaWorld.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.12:.89;const rect=seaWorld.getBoundingClientRect();const mx=e.clientX-rect.left,my=e.clientY-rect.top;const prev=seaScale;seaScale=Math.max(.3,Math.min(4,seaScale*f));seaOffX=mx-(mx-seaOffX)*(seaScale/prev);seaOffY=my-(my-seaOffY)*(seaScale/prev);document.getElementById('zoom-pct').textContent=Math.round(seaScale*100)+'%';drawSea();},{passive:false});
-seaWorld.addEventListener('touchstart',e=>{if(e.touches.length===1){isDragging=true;dragStartX=e.touches[0].clientX;dragStartY=e.touches[0].clientY;dragOffX=seaOffX;dragOffY=seaOffY;}else if(e.touches.length===2){isDragging=false;pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}},{passive:true});
-seaWorld.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&isDragging){seaOffX=dragOffX+(e.touches[0].clientX-dragStartX);seaOffY=dragOffY+(e.touches[0].clientY-dragStartY);drawSea();}else if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(pinchDist>0){seaScale=Math.max(.3,Math.min(4,seaScale*(d/pinchDist)));document.getElementById('zoom-pct').textContent=Math.round(seaScale*100)+'%';}pinchDist=d;drawSea();}},{passive:false});
-seaWorld.addEventListener('touchend',()=>{isDragging=false;},{passive:true});
-window.addEventListener('resize',()=>{if(gameState)drawSea();});
+// ══ Update UI ═════════════════════════════════════════
+function updateUI(state) {
+  gameState = state;
+  renderIslands(state);
+  const ids = ['btn-rock','btn-paper','btn-scissors','btn-cannon','btn-slicer','btn-shield','btn-store','btn-inv-cannon','btn-inv-slicer','btn-buy-cannon','btn-buy-slicer','btn-buy-shield'];
+  ids.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
+  document.getElementById('target-selector').classList.remove('visible');
+  document.getElementById('action-label').style.display = 'none';
+  document.getElementById('action-btns').style.display = 'none';
+  document.getElementById('inv-label').style.display = 'none';
+  document.getElementById('inv-btns').style.display = 'none';
+  document.getElementById('shop-section').classList.remove('visible');
+  pendingAction = null;
 
-// ── RPS Popup ──
-let rpsPopupTimer=null,lastRpsHash='';
-function showRpsPopup(state){
-  const choices=state.rpsChoices||{};if(!Object.keys(choices).length)return;
-  const hash=JSON.stringify(choices);if(hash===lastRpsHash)return;lastRpsHash=hash;
-  const winners=state.rpsWinners||(state.rpsWinner?[state.rpsWinner]:[]);
-  const isTie=winners.length===state.alivePlayers.length;
-  const E={rock:'🪨',paper:'📄',scissors:'✂️'};
-  document.getElementById('rp-emo').textContent=isTie?'🤝':winners.includes(MY_NAME)?'⭐':'💀';
-  document.getElementById('rp-title').textContent=isTie?'TIE! GO AGAIN!':winners.includes(MY_NAME)?'YOU WIN! GET A STAR!':winners.join(' & ')+' WIN!';
-  document.getElementById('rp-sub').textContent=isTie?'Same choice! Retry!':winners.includes(MY_NAME)?`${state.pendingActions[MY_NAME]||1} action slot(s)!`:'Wait for winner to act';
-  document.getElementById('rp-chips').innerHTML=state.alivePlayers.map(p=>{const w=winners.includes(p);const c=isTie?'':(w?'win':'lose');return`<div class="rpc2 ${c}">${p}: ${E[choices[p]]||choices[p]||'?'}</div>`;}).join('');
-  const popup=document.getElementById('rps-popup');popup.classList.remove('hide');popup.style.display='flex';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>popup.classList.add('show')));
-  if(rpsPopupTimer)clearTimeout(rpsPopupTimer);
-  rpsPopupTimer=setTimeout(()=>{popup.classList.remove('show');popup.classList.add('hide');setTimeout(()=>{popup.style.display='none';popup.classList.remove('hide');},220);},1300);
-}
+  const pt = document.getElementById('phase-text');
+  const rpsWait = document.getElementById('rps-waiting-row');
 
-// ── UI Update ──
-function updateUI(state){
-  gameState=state;drawSea();
-  if(state.rpsChoices&&Object.keys(state.rpsChoices).length)showRpsPopup(state);
-  const myIsland=state.islands[MY_NAME];
-  if(myIsland){
-    document.getElementById('st-cannons').textContent=myIsland.inventory?.cannons||0;
-    document.getElementById('st-slicers').textContent=myIsland.inventory?.slicers||0;
-    document.getElementById('st-shields').textContent=myIsland.shields||0;
-    document.getElementById('inv-cannon-lbl').textContent=`×${myIsland.inventory?.cannons||0}`;
-    document.getElementById('inv-slicer-lbl').textContent=`×${myIsland.inventory?.slicers||0}`;
+  if (state.phase === 'rps' && state.alivePlayers?.length > 0) {
+    rpsWait.innerHTML = state.alivePlayers
+      .map(p => `<span class="rps-pip ${state.pendingRPS[p]?'done':''}">${p}${state.pendingRPS[p]?' ✓':' ...'}</span>`)
+      .join('');
+  } else { rpsWait.innerHTML = ''; }
+
+  const myAlive = state.alivePlayers?.includes(MY_NAME);
+  if (!myAlive && !state.gameOver) { pt.textContent = '💀 ELIMINATED — SPECTATING...'; pt.className = 'text-red'; return; }
+
+  if (state.phase === 'rps') {
+    if (!myAlive) { pt.textContent = '👀 WATCHING RPS...'; pt.className = 'text-red'; }
+    else if (state.pendingRPS[MY_NAME] || myRPSSubmitted) { pt.textContent = '⏳ WAITING FOR OTHERS...'; pt.className = 'text-yellow'; }
+    else {
+      pt.textContent = '⚔ YOUR TURN — PICK RPS!'; pt.className = 'text-green';
+      ['btn-rock','btn-paper','btn-scissors'].forEach(id => {
+        const b = document.getElementById(id); if (b) b.disabled = false;
+      });
+    }
+    if (!state.pendingRPS[MY_NAME]) myRPSSubmitted = false;
+  } else if (state.phase === 'action') {
+    const rpsWinners = state.rpsWinners || (state.rpsWinner ? [state.rpsWinner] : []);
+    const pendingActions = state.pendingActions || {};
+    const myTurn = rpsWinners.includes(MY_NAME) && pendingActions[MY_NAME];
+    if (myTurn) {
+      const otherWinners = rpsWinners.filter(w => w !== MY_NAME && pendingActions[w]);
+      let phaseMsg = '✨ RPS WIN — CHOOSE ACTION!';
+      if (rpsWinners.length > 1) {
+        phaseMsg = `✨ YOU + ${rpsWinners.length - 1} OTHERS WON RPS — PICK ACTION!`;
+      }
+      pt.textContent = phaseMsg; pt.className = 'text-cyan';
+      document.getElementById('action-label').style.display = 'block';
+      document.getElementById('action-btns').style.display = 'flex';
+      ['btn-cannon','btn-slicer','btn-shield','btn-store'].forEach(id => {
+        const b = document.getElementById(id); if (b) b.disabled = false;
+      });
+      const myInv = state.islands[MY_NAME]?.inventory || { cannons:0, slicers:0 };
+      const myCoins = state.islands[MY_NAME]?.coins || 0;
+      document.getElementById('inv-cannon-count').textContent = `×${myInv.cannons} stored`;
+      document.getElementById('inv-slicer-count').textContent = `×${myInv.slicers} stored`;
+      if (myInv.cannons > 0 || myInv.slicers > 0) {
+        document.getElementById('inv-label').style.display = 'block';
+        document.getElementById('inv-btns').style.display = 'flex';
+        if (myInv.cannons > 0) { const b = document.getElementById('btn-inv-cannon'); if (b) b.disabled = false; }
+        if (myInv.slicers > 0) { const b = document.getElementById('btn-inv-slicer'); if (b) b.disabled = false; }
+      }
+      if (myCoins >= 1) {
+        document.getElementById('shop-section').classList.add('visible');
+        ['btn-buy-cannon','btn-buy-slicer','btn-buy-shield'].forEach(id => {
+          const b = document.getElementById(id); if (b) b.disabled = false;
+        });
+      }
+    } else {
+      const stillPending = Object.keys(pendingActions);
+      const whoMsg = stillPending.length > 0 ? stillPending.join(', ') : (state.rpsWinner || '?');
+      pt.textContent = `⏳ ${whoMsg} IS CHOOSING...`; pt.className = 'text-yellow';
+    }
   }
-  document.getElementById('buy-section').style.display='none';
-  document.getElementById('use-section').style.display='none';
-  document.getElementById('ts').classList.remove('on');
-  document.getElementById('sb').classList.remove('on');
-  ['btn-rock','btn-paper','btn-scissors','btn-buy-cannon','btn-buy-slicer','btn-buy-shield','btn-use-cannon','btn-use-slicer'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
 
-  const pt=document.getElementById('pt'),ph=document.getElementById('hud-phase'),pips=document.getElementById('rp');
-  if(state.phase==='rps'&&state.alivePlayers?.length>0){
-    pips.innerHTML=state.alivePlayers.map(p=>`<span class="rc ${state.pendingRPS[p]?'done':''}">${p}${state.pendingRPS[p]?' ✓':' ...'}</span>`).join('');
-  }else pips.innerHTML='';
-
-  const myAlive=state.alivePlayers?.includes(MY_NAME);
-  if(!myAlive&&!state.gameOver){pt.textContent='💀 ELIMINATED — WATCHING...';pt.className='pt-r';ph.textContent='SPECTATE';return;}
-
-  if(state.phase==='rps'){
-    if(!myAlive){pt.textContent='👀 WATCHING RPS...';pt.className='pt-r';ph.textContent='SPECTATE';}
-    else if(state.pendingRPS[MY_NAME]||myRPSSubmitted){pt.textContent='⏳ WAITING FOR OTHERS...';pt.className='pt-y';ph.textContent='WAITING';}
-    else{pt.textContent='🪨 PICK YOUR MOVE! (RPS)';pt.className='pt-g';ph.textContent='YOUR TURN!';['btn-rock','btn-paper','btn-scissors'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});}
-    if(!state.pendingRPS[MY_NAME])myRPSSubmitted=false;
-  }else if(state.phase==='action'){
-    const winners=state.rpsWinners||(state.rpsWinner?[state.rpsWinner]:[]);
-    const slotsLeft=state.pendingActions[MY_NAME]||0;
-    const myTurn=winners.includes(MY_NAME)&&slotsLeft>0;
-    if(myTurn){
-      pt.textContent=`⭐ YOU WIN RPS! ${slotsLeft} MOVE${slotsLeft>1?'S':''} LEFT!`;pt.className='pt-c';ph.textContent='ACT NOW!';
-      const sb=document.getElementById('sb');sb.innerHTML='';
-      const tot=myIsland?.winSlots||slotsLeft;
-      for(let i=0;i<tot;i++){const s=document.createElement('span');s.className='sp'+(i>=slotsLeft?' u':'');s.textContent='⭐';sb.appendChild(s);}
-      sb.classList.add('on');
-      document.getElementById('buy-section').style.display='flex';
-      document.getElementById('use-section').style.display='flex';
-      ['btn-buy-cannon','btn-buy-slicer','btn-buy-shield'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});
-      const inv=myIsland?.inventory||{cannons:0,slicers:0};
-      if(inv.cannons>0){const b=document.getElementById('btn-use-cannon');if(b)b.disabled=false;}
-      if(inv.slicers>0){const b=document.getElementById('btn-use-slicer');if(b)b.disabled=false;}
-    }else{const sp=Object.keys(state.pendingActions);pt.textContent=`⏳ ${sp.length?sp.join(', '):'...'} IS CHOOSING...`;pt.className='pt-y';ph.textContent='WAITING';}
+  if (state.moves?.length > 0 && logVisible) {
+    document.getElementById('move-log').innerHTML = state.moves.map(m => `<p>> ${m}</p>`).join('');
+  } else if (state.moves?.length > 0) {
+    document.getElementById('move-log').innerHTML = state.moves.map(m => `<p>> ${m}</p>`).join('');
   }
-  if(state.moves?.length>0) document.getElementById('ml').innerHTML=state.moves.map(m=>`<p>▸ ${m}</p>`).join('');
 }
 
-function flash(msg){const el=document.getElementById('flash');el.textContent=msg;setTimeout(()=>el.textContent='',3000);}
-
-function showGameOver(winner,state){
-  if(gameOver)return;gameOver=true;stopPolling();
-  const isWin=winner===MY_NAME;
-  document.getElementById('go-title').innerHTML=isWin?'🏆 YOU WIN!':`<span class="go-lose-t">💀 ${winner} WINS</span>`;
-  document.getElementById('go-sub').textContent=isWin?'COURSE CLEAR! AMAZING!':'GAME OVER! TRY AGAIN?';
-  document.getElementById('go-scores').innerHTML=state.players.sort((a,b)=>state.scores[b]-state.scores[a]).map((p,i)=>`${['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'][i]||i+1} ${p} — ${state.scores[p]}pts${p===winner?' 👑':''}`).join('<br>');
-  document.getElementById('gameover').classList.add('on');
-  if(isWin)spawnCoinRain();
+function flash(msg) {
+  const el = document.getElementById('flash-msg');
+  el.textContent = msg; setTimeout(() => { el.textContent = ''; }, 2800);
 }
 
-// ── Actions ──
-async function sendRPS(choice){
-  myRPSSubmitted=true;
-  ['btn-rock','btn-paper','btn-scissors'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
-  document.getElementById('pt').textContent='⏳ WAITING FOR OTHERS...';document.getElementById('pt').className='pt-y';
-  const data=await post('rps_choice',{gameId:GAME_ID,username:MY_NAME,choice});
-  if(data.error){flash(data.error);myRPSSubmitted=false;return;}
-  if(data.state)updateUI(data.state);
-}
-function doAction(act,useInv){if(act==='cannon'||act==='slicer'){pickTarget(act);return;}sendAction(act,null,useInv);}
-function pickTarget(act){
-  if(!gameState)return;pendingActionType=act;
-  const opps=gameState.alivePlayers.filter(p=>p!==MY_NAME);
-  if(opps.length===1){sendAction(act,opps[0],true);return;}
-  document.getElementById('ts').classList.add('on');
-  document.getElementById('tl').textContent=act==='cannon'?'💣 CANNON TARGET!':'⚔ SLICER TARGET!';
-  document.getElementById('tr').innerHTML=opps.map(opp=>`<button class="tbtn" onclick="sendAction('${act}','${opp}',true)">${opp}</button>`).join('');
-}
-function cancelTarget(){pendingActionType=null;document.getElementById('ts').classList.remove('on');}
-async function sendAction(act,target,useInv){
-  document.getElementById('ts').classList.remove('on');
-  ['btn-buy-cannon','btn-buy-slicer','btn-buy-shield','btn-use-cannon','btn-use-slicer'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
-  const payload={gameId:GAME_ID,username:MY_NAME,action:act};
-  if(target)payload.targetPlayer=target;if(useInv)payload.useInventory=true;
-  const data=await post('action_choice',payload);
-  if(data.error){flash(data.error);if(gameState)updateUI(gameState);return;}
-  if(data.state)updateUI(data.state);if(data.gameOver)showGameOver(data.winner,data.state);
+function showGameOver(winner, state) {
+  if (gameOver) return; gameOver = true; stopPolling();
+  document.getElementById('gameover-title').innerHTML =
+    winner === MY_NAME ? '<span class="win-text">🏆 YOU WIN!</span>' : `<span class="lose-text">${winner} WINS!</span>`;
+  document.getElementById('gameover-scores').innerHTML =
+    state.players.sort((a,b)=>state.scores[b]-state.scores[a])
+      .map((p,i)=>`<div>${i+1}. ${p}: ${state.scores[p]} pts${p===winner?' 👑':''}</div>`).join('');
+  document.getElementById('gameover-overlay').classList.add('visible');
 }
 
-// ── Polling ──
-function stopPolling(){if(pollInterval){clearInterval(pollInterval);pollInterval=null;}}
-let lastHash='';
-async function poll(){
-  if(isPollRunning)return;isPollRunning=true;
-  try{
-    const data=await getState();
-    if(data.error){failCount++;if(failCount>=4)setConn('warn','RETRY...');if(failCount>=120)setConn('err','WEAK!');return;}
-    failCount=0;
-    const s=data.state;
-    const hash=s.phase+(s.moves?.length||0)+JSON.stringify(s.pendingRPS)+JSON.stringify(s.pendingActions)+JSON.stringify(s.rpsChoices);
-    if(hash!==lastHash||!gameState){lastHash=hash;updateUI(s);}
-    if(s.gameOver&&!gameOver)showGameOver(s.winner,s);
-    setConn('ok','LIVE!');
-  }catch(e){failCount++;if(failCount>=3)setConn('warn','RETRY...');if(failCount>=200){stopPolling();setTimeout(()=>{gameOver=false;failCount=0;init(1);},5000);}}
-  finally{isPollRunning=false;}
+// ══ RPS ═══════════════════════════════════════════════
+async function sendRPS(choice) {
+  myRPSSubmitted = true;
+  ['btn-rock','btn-paper','btn-scissors'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
+  document.getElementById('phase-text').textContent = '⏳ WAITING FOR OTHERS...';
+  document.getElementById('phase-text').className = 'text-yellow';
+  const data = await post('rps_choice', { gameId: GAME_ID, username: MY_NAME, choice });
+  if (data.error) { flash(data.error); myRPSSubmitted = false; return; }
+  if (data.state) updateUI(data.state);
 }
-async function init(attempt){
-  attempt=attempt||1;const MAX=8;setConn('warn',`...${attempt}/${MAX}`);
-  try{
-    const data=await getState();
-    if(data.error){if(attempt<MAX){setTimeout(()=>init(attempt+1),1200*attempt);return;}setConn('err','ERR!');return;}
-    setConn('ok','LIVE!');updateUI(data.state);
-    if(data.state.gameOver){showGameOver(data.state.winner,data.state);return;}
-    pollInterval=setInterval(poll,1800);
-  }catch(e){if(attempt<MAX){setTimeout(()=>init(attempt+1),1500*attempt);return;}setConn('err','FAIL!');}
+
+// ══ Actions ═══════════════════════════════════════════
+function pickAction(act, fromInv) {
+  if (!gameState) return;
+  const opps = gameState.alivePlayers.filter(p => p !== MY_NAME);
+  if (opps.length === 1) { sendAction(act, opps[0], fromInv); return; }
+  pendingAction = act;
+  document.getElementById('target-selector').classList.add('visible');
+  document.getElementById('target-label').textContent = act === 'cannon' ? '🎯 CANNON TARGET:' : '⚔ SLICER TARGET:';
+  document.getElementById('target-btn-row').innerHTML =
+    opps.map(opp => `<button class="target-btn" onclick="sendAction('${act}','${opp}',${fromInv})">${opp}</button>`).join('');
+}
+
+async function sendAction(act, target, fromInv) {
+  document.getElementById('target-selector').classList.remove('visible');
+  ['btn-cannon','btn-slicer','btn-shield','btn-store','btn-inv-cannon','btn-inv-slicer'].forEach(id => {
+    const b = document.getElementById(id); if (b) b.disabled = true;
+  });
+  const payload = { gameId: GAME_ID, username: MY_NAME, action: act };
+  if (target) payload.targetPlayer = target;
+  if (fromInv) payload.useInventory = true;
+  const data = await post('action_choice', payload);
+  if (data.error) { flash(data.error); if (gameState) updateUI(gameState); return; }
+  if (data.state) updateUI(data.state);
+  if (data.gameOver) showGameOver(data.winner, data.state);
+}
+
+// ══ Coin shop ═════════════════════════════════════════
+function buyItem(act) {
+  ['btn-buy-cannon','btn-buy-slicer','btn-buy-shield'].forEach(id => {
+    const b = document.getElementById(id); if (b) b.disabled = true;
+  });
+  sendAction(act, null, false);
+}
+
+// ══ Polling ═══════════════════════════════════════════
+function stopPolling() { if (pollInterval) { clearInterval(pollInterval); pollInterval = null; } }
+let lastHash = '';
+// ── Poll with reconnect grace — game stays alive through connection blips ──
+let reconnectTimer = null;
+async function poll() {
+  try {
+    const data = await getState();
+    if (data.error) {
+      failCount++;
+      // Don't crash the game — server may have had a hiccup
+      if (failCount >= 4) {
+        const bar = document.getElementById('conn-text');
+        bar.innerHTML = '<span class="spinner"></span>RECONNECTING...';
+        bar.parentElement.className = '';
+      }
+      // After 120 fails (~3.6 min) show lost message but DON'T stop polling
+      // This way if server comes back, game resumes automatically
+      if (failCount >= 120) {
+        const bar = document.getElementById('conn-text');
+        bar.textContent = '⚠ CONNECTION WEAK — STILL TRYING...';
+        bar.parentElement.className = 'err';
+      }
+      return;
+    }
+    failCount = 0;
+    const state = data.state;
+    const hash = state.phase+(state.moves?.length||0)+JSON.stringify(state.pendingRPS)+JSON.stringify(state.islands);
+    if (hash !== lastHash || !gameState) { lastHash = hash; updateUI(state); }
+    if (state.gameOver && !gameOver) showGameOver(state.winner, state);
+    const bar = document.getElementById('conn-text');
+    bar.textContent = '⚡ LIVE'; bar.parentElement.className = 'ok';
+  } catch(e) {
+    failCount++;
+    if (failCount >= 3) {
+      const bar = document.getElementById('conn-text');
+      bar.innerHTML = '<span class="spinner"></span>RECONNECTING...';
+      bar.parentElement.className = '';
+    }
+    // Never permanently stop polling — always keep trying to reconnect
+    // Only show lost after very long time (5+ minutes)
+    if (failCount >= 200) {
+      const bar = document.getElementById('conn-text');
+      bar.textContent = '❌ CONNECTION LOST — REFRESH TO REJOIN';
+      bar.parentElement.className = 'err';
+      stopPolling();
+      // Auto-retry init after 5s so the page can self-heal
+      setTimeout(() => { gameOver = false; failCount = 0; init(1); }, 5000);
+    }
+  }
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (gameState) renderIslands(gameState); initIcons(); }, 200);
+});
+
+// ── Robust init with retries (fixes "GAME NOT FOUND" on server cold start) ──
+async function init(attempt) {
+  attempt = attempt || 1;
+  const MAX_ATTEMPTS = 8;
+  initIcons();
+  const bar = document.getElementById('conn-text');
+  bar.innerHTML = `<span class="spinner"></span>CONNECTING... (${attempt}/${MAX_ATTEMPTS})`;
+  try {
+    const data = await getState();
+    if (data.error) {
+      if (attempt < MAX_ATTEMPTS) {
+        // Server may still be waking up — retry with backoff
+        bar.innerHTML = `<span class="spinner"></span>RETRYING... (${attempt}/${MAX_ATTEMPTS})`;
+        setTimeout(() => init(attempt + 1), 1200 * attempt);
+        return;
+      }
+      bar.textContent = '❌ GAME NOT FOUND — CHECK YOUR LINK'; bar.parentElement.className = 'err'; return;
+    }
+    bar.textContent = '⚡ LIVE'; bar.parentElement.className = 'ok';
+    updateUI(data.state);
+    if (data.state.gameOver) { showGameOver(data.state.winner, data.state); return; }
+    pollInterval = setInterval(poll, 1800);
+  } catch(e) {
+    if (attempt < MAX_ATTEMPTS) {
+      bar.innerHTML = `<span class="spinner"></span>RETRYING... (${attempt}/${MAX_ATTEMPTS})`;
+      setTimeout(() => init(attempt + 1), 1500 * attempt);
+      return;
+    }
+    bar.textContent = '❌ FAILED TO LOAD — REFRESH'; bar.parentElement.className = 'err';
+  }
 }
 init(1);
 </script>
