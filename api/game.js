@@ -1,32 +1,12 @@
-// ─── Vortex Islands — API v4 (Win-Slot Economy, No Coins) ─────────────────────
+// ─── Vortex Islands — API v3 + Coin Economy + Public Lobbies ──────────────────
 const { v4: uuidv4 } = require('uuid');
-
-if (!global._vortexStore) {
-  global._vortexStore = { lobbies:{}, games:{}, online:{}, _botLocks:{} };
-}
+if (!global._vortexStore) global._vortexStore = { lobbies:{}, games:{}, online:{} };
 const store = global._vortexStore;
-if (!store._botLocks) store._botLocks = {};
-
-// Online: expire after 35s
+// Expire online players after 20s of no heartbeat
 function getOnlinePlayers() {
   const now = Date.now();
-  Object.keys(store.online).forEach(u => {
-    if (now - store.online[u].ts > 35000) delete store.online[u];
-  });
+  Object.keys(store.online).forEach(u => { if (now - store.online[u].ts > 20000) delete store.online[u]; });
   return Object.keys(store.online);
-}
-
-function cleanupStaleGames() {
-  const now = Date.now();
-  Object.keys(store.games).forEach(id => {
-    if (now - (store.games[id].lastAction||0) > 7200000) {
-      delete store.games[id]; delete store._botLocks[id];
-    }
-  });
-  Object.keys(store.lobbies).forEach(code => {
-    const l = store.lobbies[code];
-    if (now - (l.lastActivity||l.createdAt||0) > 1800000) delete store.lobbies[code];
-  });
 }
 
 function seededRandom(seed) {
@@ -34,11 +14,11 @@ function seededRandom(seed) {
   return () => { s = (Math.imul(1664525,s)+1013904223)>>>0; return s/0xffffffff; };
 }
 
-// 4× resolution: 64×32
+// Higher resolution grid: 32×16 (was 20×10)
 function generateIslandGrid(seed) {
   const rng = seededRandom(seed);
-  const W=64, H=32, cx=W/2, cy=H/2;
-  const rx=22+rng()*5, ry=10+rng()*3;
+  const W=32, H=16, cx=W/2, cy=H/2;
+  const rx=11+rng()*3, ry=5+rng()*2;
   const LAND=['grass','grass','grass','dark_grass','dark_grass','stone','dirt','sand'];
   return Array.from({length:H},(_,r)=>Array.from({length:W},(_,c)=>{
     const dx=(c+.5-cx)/rx, dy=(r+.5-cy)/ry;
@@ -65,7 +45,8 @@ function publicLobby(l) {
   return {
     code:l.code, host:l.host, players:l.players,
     maxPlayers:l.maxPlayers, status:l.status, gameId:l.gameId||null,
-    bots:l.bots||[], privacy:l.privacy||'public', createdAt:l.createdAt||Date.now()
+    bots:l.bots||[], privacy:l.privacy||'public',
+    createdAt:l.createdAt||Date.now()
   };
 }
 
@@ -76,15 +57,13 @@ function createGame(players, lobbyCode, bots) {
     baseGrids[p]=generateIslandGrid(seed);
     grids[p]=baseGrids[p].map(r=>[...r]);
     scores[p]=0;
-    // inventory: stored cannons & slicers; winSlots: actions available this turn
-    islands[p]={ shields:0, quadrants:[], alive:true, inventory:{cannons:0,slicers:0}, winSlots:0 };
+    islands[p]={ shields:0, quadrants:[], alive:true, inventory:{cannons:0,slicers:0}, coins:0 };
   });
   return store.games[gameId]={
     gameId, players:[...players], alivePlayers:[...players],
     baseGrids, grids, scores, islands, moves:[],
     phase:'rps', pendingRPS:{}, rpsWinner:null, rpsWinners:[],
-    pendingActions:{}, // { player: slotsRemaining }
-    rpsChoices:{},
+    pendingActions:{}, // track who still needs to take action among winners
     gameOver:false, winner:null, lobbyCode, bots:bots||[], lastAction:Date.now()
   };
 }
@@ -95,7 +74,7 @@ function publicState(g) {
     grids:g.grids, scores:g.scores, islands:g.islands, moves:g.moves,
     phase:g.phase,
     pendingRPS:Object.fromEntries(Object.entries(g.pendingRPS).map(([k])=>[k,true])),
-    rpsChoices:g.rpsChoices||{},
+    rpsChoices:g.rpsChoices||{}, // visible choices after resolution
     rpsWinner:g.rpsWinner, rpsWinners:g.rpsWinners||[],
     pendingActions:g.pendingActions||{},
     gameOver:g.gameOver, winner:g.winner, bots:g.bots||[]
@@ -109,295 +88,277 @@ function resolveMultiRPS(choices){
   const players=Object.keys(choices);
   if(players.length===1)return players;
   const moves=[...new Set(Object.values(choices))];
-  if(moves.length===1)return players; // all same = tie
+  if(moves.length===1)return players;
   for(const m of moves){
     const others=moves.filter(x=>x!==m);
     if(others.every(x=>rpsBeats(m,x)))return players.filter(p=>choices[p]===m);
   }
-  return players; // 3-way tie
-}
-
-// ── Win-slot calculation: winner gets 1 slot per loser they beat ──────────────
-// In 2p: winner beats 1 → 1 slot
-// In 3p: if 1 winner beats 2 losers → 2 slots
-// In 6p: if 1 winner beats 5 losers → 5 slots
-function calcWinSlots(winnerChoice, allChoices, winnerName) {
-  let slots = 0;
-  Object.entries(allChoices).forEach(([p, c]) => {
-    if (p !== winnerName && rpsBeats(winnerChoice, c)) slots++;
-  });
-  return Math.max(1, slots); // at least 1
+  return players;
 }
 
 const RPS_MOVES = ['rock','paper','scissors'];
 function botPickRPS() { return RPS_MOVES[Math.floor(Math.random()*RPS_MOVES.length)]; }
 
-// Bot picks what to do with a single slot
-function botPickOneAction(g, botName) {
+function botPickAction(g, botName) {
   const me = g.islands[botName];
   const enemies = g.alivePlayers.filter(p=>p!==botName);
   const target = enemies[Math.floor(Math.random()*enemies.length)];
+  const coins = me.coins||0;
 
-  // Use stored weapons first
-  if (me.inventory.cannons > 0 && target) {
+  if (coins >= 1) {
+    const enemyHasShield = target && g.islands[target] && g.islands[target].shields>0;
+    if (enemyHasShield && Math.random()<0.7) return { act:'buy_cannon', target };
+    if (!enemyHasShield && Math.random()<0.6) return { act:'buy_slicer', target };
+    if (me.shields===0 && Math.random()<0.5) return { act:'buy_shield', target:null };
+  }
+  if (me.inventory.cannons>0 && target && Math.random()<0.6)
     return { act:'cannon', target, fromInv:true };
+  if (me.inventory.slicers>0 && target && Math.random()<0.5) {
+    const t=g.islands[target];
+    if (!t||t.shields===0) return { act:'slicer', target, fromInv:true };
   }
-  if (me.inventory.slicers > 0 && target) {
-    const t = g.islands[target];
-    if (!t || t.shields === 0) return { act:'slicer', target, fromInv:true };
-    // target has shield, use cannon to remove it
-    if (me.inventory.cannons > 0) return { act:'cannon', target, fromInv:true };
-  }
-
-  // Buy something
-  const enemyHasShield = target && g.islands[target] && g.islands[target].shields > 0;
-  if (enemyHasShield) return { act:'buy_cannon', target }; // need to strip shield
-  if (me.shields < 2 && Math.random() < 0.3) return { act:'buy_shield', target:null };
-  if (Math.random() < 0.55) return { act:'buy_slicer', target };
-  return { act:'buy_cannon', target };
+  return { act:'store', target:null, fromInv:false };
 }
 
 const QNAMES = ['TOP-LEFT','TOP-RIGHT','BOT-LEFT','BOT-RIGHT'];
+const SHOP_PRICE = 1;
 
-// applyOneAction handles ONE action slot (buy or use)
-// Returns { error? } or { gameOver?, winner? }
-function applyOneAction(g, username, act, targetPlayer, useInventory) {
-  const alive = g.alivePlayers;
-  const target = (targetPlayer && alive.includes(targetPlayer) && targetPlayer !== username)
-    ? targetPlayer : alive.find(p => p !== username);
-  const me = g.islands[username];
+function applyAction(g, username, act, targetPlayer, useInventory) {
+  const alive=g.alivePlayers;
+  const target=(targetPlayer&&alive.includes(targetPlayer)&&targetPlayer!==username)
+    ? targetPlayer : alive.find(p=>p!==username);
+  const me=g.islands[username];
 
-  // ── BUY CANNON (store for later) ──────────────────────────────────────────
-  if (act === 'buy_cannon') {
-    me.inventory.cannons++;
-    g.moves.unshift(`💣 ${username} bought & stored a CANNON (now has ${me.inventory.cannons})`);
-    g.lastAction = Date.now();
-    return {};
-  }
-
-  // ── BUY SLICER (store for later) ─────────────────────────────────────────
-  if (act === 'buy_slicer') {
-    me.inventory.slicers++;
-    g.moves.unshift(`⚔ ${username} bought & stored a SLICER (now has ${me.inventory.slicers})`);
-    g.lastAction = Date.now();
-    return {};
-  }
-
-  // ── BUY SHIELD (immediate, does NOT use inventory, max 3) ─────────────────
-  if (act === 'buy_shield') {
-    if (me.shields >= 3) return { error:'MAX 3 SHIELDS — use a slot for something else' };
-    me.shields++;
-    g.moves.unshift(`🛡 ${username} raised shield ring ${me.shields}/3 — SLICER attacks are now BLOCKED!`);
-    g.lastAction = Date.now();
-    return {};
-  }
-
-  // ── USE CANNON (from inventory — removes shield OR destroys quadrant) ─────
-  if (act === 'cannon') {
-    if (!target) return { error:'NO TARGET' };
-    if (!useInventory || me.inventory.cannons <= 0) return { error:'NO CANNON IN STORAGE — buy one first' };
-    me.inventory.cannons--;
-    const t = g.islands[target];
-    if (t.shields > 0) {
-      t.shields--;
-      g.moves.unshift(`💣 ${username}'s CANNON stripped ${target}'s shield! (${t.shields} rings left)`);
+  // ── SHOP: buy with coins ──────────────────────────────────────────────────
+  if (act==='buy_cannon'||act==='buy_slicer'||act==='buy_shield') {
+    if ((me.coins||0)<SHOP_PRICE) return {error:'NOT ENOUGH COINS — WIN RPS TO EARN COINS!'};
+    me.coins-=SHOP_PRICE;
+    if (act==='buy_shield') {
+      if (me.shields>=3) { me.coins+=SHOP_PRICE; return {error:'MAX 3 SHIELDS'}; }
+      me.shields++;
+      g.moves.unshift(`🪙 ${username} bought 🛡 SHIELD (${me.shields}/3) — slicers can no longer cut you!`);
+    } else if (act==='buy_cannon') {
+      me.inventory.cannons++;
+      g.moves.unshift(`🪙 ${username} bought 💣 CANNON — stored in inventory!`);
     } else {
-      const surv = [0,1,2,3].filter(q => !t.quadrants.includes(q));
-      if (surv.length > 0) {
-        const q = surv[Math.floor(Math.random()*surv.length)];
+      me.inventory.slicers++;
+      g.moves.unshift(`🪙 ${username} bought ⚔ SLICER — stored in inventory!`);
+    }
+    return {};
+  }
+
+  // ── CANNON: removes shield OR destroys quadrant ───────────────────────────
+  if (act==='cannon') {
+    if (!target) return {error:'NO TARGET'};
+    if (useInventory) {
+      if (me.inventory.cannons<=0) return {error:'NO CANNONS IN INVENTORY'};
+      me.inventory.cannons--;
+    }
+    const t=g.islands[target];
+    if (t.shields>0) {
+      t.shields--;
+      g.moves.unshift(`💣 ${username}'s CANNON blasted through ${target}'s shield! (${t.shields} rings left)`);
+    } else {
+      const surv=[0,1,2,3].filter(q=>!t.quadrants.includes(q));
+      if (surv.length>0) {
+        const q=surv[Math.floor(Math.random()*surv.length)];
         t.quadrants.push(q);
-        g.moves.unshift(`💥 ${username}'s CANNON destroyed ${target}'s ${QNAMES[q]} quadrant!`);
-        g.grids[target] = applyQuadrantDamage(g.baseGrids[target], t.quadrants);
+        g.moves.unshift(`💥 ${username}'s CANNON destroyed ${target}'s ${QNAMES[q]}!`);
+        g.grids[target]=applyQuadrantDamage(g.baseGrids[target],t.quadrants);
       }
     }
-    g.scores[username] += 5;
-    g.lastAction = Date.now();
-    // Elimination check
-    return checkElim(g, target);
+    if (!useInventory) {
+      me.inventory.cannons++;
+      g.moves.unshift(`📦 ${username} banked a 💣 Cannon`);
+    }
+
+  // ── SLICER: BLOCKED by shield; cuts+deletes quadrant if no shield ─────────
+  } else if (act==='slicer') {
+    if (!target) return {error:'NO TARGET'};
+    if (useInventory) {
+      if (me.inventory.slicers<=0) return {error:'NO SLICERS IN INVENTORY'};
+      me.inventory.slicers--;
+    }
+    const t=g.islands[target];
+    if (t.shields>0) {
+      // Shield blocks slicer completely — refund it
+      if (useInventory) me.inventory.slicers++;
+      g.moves.unshift(`🛡 ${target}'s shield BLOCKED ${username}'s slicer! Use 💣 CANNON to remove the shield first!`);
+    } else {
+      // No shield: slicer slices island into 4 then deletes one part
+      const surv=[0,1,2,3].filter(q=>!t.quadrants.includes(q));
+      if (surv.length>0) {
+        const q=surv[Math.floor(Math.random()*surv.length)];
+        t.quadrants.push(q);
+        g.moves.unshift(`⚔ ${username}'s SLICER split ${target}'s island into ${4} parts and deleted ${QNAMES[q]}!`);
+        g.grids[target]=applyQuadrantDamage(g.baseGrids[target],t.quadrants);
+        if (surv.length-1>0)
+          g.moves.unshift(`🗺 ${target} has ${surv.length-1} island part(s) remaining.`);
+      }
+      if (!useInventory) {
+        me.inventory.slicers++;
+        g.moves.unshift(`📦 ${username} banked a ⚔ Slicer`);
+      }
+    }
+
+  // ── SHIELD: free action, up to 3 rings ───────────────────────────────────
+  } else if (act==='shield') {
+    if (me.shields>=3) return {error:'MAX 3 SHIELDS'};
+    me.shields++;
+    g.moves.unshift(`🛡 ${username} raised shield ring ${me.shields}/3 — SLICER is now BLOCKED!`);
+    const bonus=Math.random()<.5?'cannons':'slicers';
+    me.inventory[bonus]++;
+    g.moves.unshift(`📦 ${username} got a ${bonus==='cannons'?'💣 Cannon':'⚔ Slicer'} bonus!`);
+
+  // ── STORE: bank both weapons ──────────────────────────────────────────────
+  } else if (act==='store') {
+    me.inventory.cannons++;
+    me.inventory.slicers++;
+    g.moves.unshift(`📦 ${username} banked 💣 Cannon + ⚔ Slicer!`);
+
+  } else {
+    return {error:'UNKNOWN ACTION'};
   }
 
-  // ── USE SLICER (from inventory — BLOCKED by shield; slices quadrant) ──────
-  if (act === 'slicer') {
-    if (!target) return { error:'NO TARGET' };
-    if (!useInventory || me.inventory.slicers <= 0) return { error:'NO SLICER IN STORAGE — buy one first' };
-    const t = g.islands[target];
-    if (t.shields > 0) {
-      // Refund — slicer bounced off shield, player should use cannon first
-      me.inventory.slicers++;
-      return { error:`🛡 ${target} has shields — use CANNON to remove shields first, then SLICER!` };
-    }
-    me.inventory.slicers--;
-    const surv = [0,1,2,3].filter(q => !t.quadrants.includes(q));
-    if (surv.length > 0) {
-      const q = surv[Math.floor(Math.random()*surv.length)];
-      t.quadrants.push(q);
-      g.moves.unshift(`⚔ ${username}'s SLICER carved off ${target}'s ${QNAMES[q]} quadrant!`);
-      g.grids[target] = applyQuadrantDamage(g.baseGrids[target], t.quadrants);
-      g.moves.unshift(`🗺 ${target} has ${surv.length-1} quadrant(s) remaining.`);
-    }
-    g.scores[username] += 3;
-    g.lastAction = Date.now();
-    return checkElim(g, target);
+  // Elimination check
+  if (target&&g.islands[target]&&g.islands[target].quadrants.length>=4) {
+    g.islands[target].alive=false;
+    g.alivePlayers=g.alivePlayers.filter(p=>p!==target);
+    g.moves.unshift(`💀 ${target}'s island sank — ELIMINATED!`);
   }
 
-  return { error:'UNKNOWN ACTION' };
-}
-
-function checkElim(g, target) {
-  if (target && g.islands[target] && g.islands[target].quadrants.length >= 4) {
-    g.islands[target].alive = false;
-    g.alivePlayers = g.alivePlayers.filter(p => p !== target);
-    g.moves.unshift(`💀 ${target}'s island fully sank — ELIMINATED!`);
-    if (g.alivePlayers.length === 1) {
-      const gw = g.alivePlayers[0];
-      g.gameOver = true; g.phase = 'done'; g.winner = gw; g.scores[gw] += 50;
-      if (g.lobbyCode && store.lobbies[g.lobbyCode]) store.lobbies[g.lobbyCode].status = 'waiting';
-      return { gameOver:true, winner:gw };
-    }
+  // Win check
+  if (g.alivePlayers.length===1) {
+    const gw=g.alivePlayers[0];
+    g.gameOver=true; g.phase='done'; g.winner=gw; g.scores[gw]+=50;
+    if (g.lobbyCode&&store.lobbies[g.lobbyCode]) store.lobbies[g.lobbyCode].status='waiting';
+    return {gameOver:true,winner:gw};
   }
+
+  g.phase='rps'; g.rpsWinner=null; g.pendingRPS={};
   return {};
 }
 
-function resolveRPSPhase(g) {
-  const choices = {...g.pendingRPS};
-  g.rpsChoices = choices;
-  const winners = resolveMultiRPS(choices);
-  const choiceStr = g.alivePlayers.map(p=>`${p}:${choices[p]}`).join(' | ');
-
-  if (winners.length === g.alivePlayers.length) {
-    // Full tie
-    g.moves.unshift(`🤝 TIE — ${choiceStr} — retry!`);
-    g.pendingRPS = {}; g.rpsChoices = {};
-    return false; // not resolved
-  }
-
-  // Winners get slots based on how many losers they beat
-  winners.forEach(w => {
-    const slots = calcWinSlots(choices[w], choices, w);
-    g.pendingActions[w] = slots; // slots remaining for this player
-    g.islands[w].winSlots = slots;
-    g.scores[w] += 10;
-  });
-  g.rpsWinners = [...winners];
-  g.rpsWinner = winners[0];
-  g.phase = 'action';
-  g.pendingRPS = {};
-  const slotDesc = winners.map(w=>`${w}(×${g.pendingActions[w]})`).join(', ');
-  g.moves.unshift(`🏆 ${slotDesc} WIN RPS (${choiceStr})`);
-  return true;
+function awardCoin(g, winner) {
+  g.islands[winner].coins=(g.islands[winner].coins||0)+1;
+  g.moves.unshift(`🪙 ${winner} won RPS and earned 1 COIN! (Total: ${g.islands[winner].coins})`);
 }
 
 function runBotMoves(g) {
-  if (!g || g.gameOver || !g.bots || g.bots.length === 0) return;
-  const lockKey = g.gameId;
-  if (store._botLocks[lockKey]) return;
-  store._botLocks[lockKey] = true;
-  try {
-    if (g.phase === 'rps') {
-      g.bots.forEach(bot => {
-        if (g.alivePlayers.includes(bot) && !g.pendingRPS[bot]) {
-          g.pendingRPS[bot] = botPickRPS();
-        }
-      });
-      if (g.alivePlayers.every(p => g.pendingRPS[p])) {
-        const resolved = resolveRPSPhase(g);
-        if (!resolved) {
-          store._botLocks[lockKey] = false;
-          runBotMoves(g);
-          return;
-        }
-        // Auto-play bot winners — each uses ALL their slots
-        g.rpsWinners.filter(w => g.bots.includes(w)).forEach(w => {
-          while ((g.pendingActions[w]||0) > 0 && !g.gameOver) {
-            const {act,target} = botPickOneAction(g, w);
-            applyOneAction(g, w, act, target?(target.name||target):null, act==='cannon'||act==='slicer');
-            g.pendingActions[w]--;
-          }
+  if (!g||g.gameOver||!g.bots||g.bots.length===0) return;
+  if (g.phase==='rps') {
+    g.bots.forEach(bot=>{
+      if (g.alivePlayers.includes(bot)&&!g.pendingRPS[bot]) {
+        g.pendingRPS[bot]=botPickRPS(); g.lastAction=Date.now();
+      }
+    });
+    if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
+      const choices={...g.pendingRPS};
+      g.rpsChoices=choices;
+      const winners=resolveMultiRPS(g.pendingRPS);
+      const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
+      if (winners.length===g.alivePlayers.length) {
+        g.moves.unshift(`🤝 TIE — ${choiceStr}`);
+        g.pendingRPS={}; g.rpsChoices={};
+        runBotMoves(g);
+      } else {
+        winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
+        g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
+        g.phase='action'; g.pendingRPS={};
+        winners.forEach(w=>awardCoin(g,w));
+        g.moves.unshift(`🏆 ${winners.join(', ')} WIN RPS (${choiceStr}) — each picks an action!`);
+        winners.filter(w=>g.bots.includes(w)).forEach(w=>{
+          const{act,target,fromInv}=botPickAction(g,w);
+          applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
           delete g.pendingActions[w];
         });
-        if (Object.keys(g.pendingActions).length === 0 && !g.gameOver) {
+        if (Object.keys(g.pendingActions).length===0){
           g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
         }
       }
-    } else if (g.phase === 'action') {
-      const botActors = Object.keys(g.pendingActions).filter(w => g.bots.includes(w));
-      botActors.forEach(w => {
-        while ((g.pendingActions[w]||0) > 0 && !g.gameOver) {
-          const {act,target} = botPickOneAction(g, w);
-          applyOneAction(g, w, act, target?(target.name||target):null, act==='cannon'||act==='slicer');
-          g.pendingActions[w]--;
-        }
-        delete g.pendingActions[w];
-      });
-      if (Object.keys(g.pendingActions).length === 0 && !g.gameOver) {
-        g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
-      }
     }
-  } finally {
-    store._botLocks[lockKey] = false;
+  } else if (g.phase==='action'&&g.pendingActions) {
+    const botActors=Object.keys(g.pendingActions).filter(w=>g.bots.includes(w));
+    botActors.forEach(w=>{
+      const{act,target,fromInv}=botPickAction(g,w);
+      applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
+      delete g.pendingActions[w];
+    });
+    if (Object.keys(g.pendingActions).length===0&&!g.gameOver){
+      g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+    }
   }
 }
 
 const ok=(res,d)=>{res.setHeader('Content-Type','application/json');res.status(200).json(d);};
 const fail=(res,m,c=400)=>{res.setHeader('Content-Type','application/json');res.status(c).json({error:m});};
 
-module.exports = async function handler(req, res) {
+// Promo codes
+const PROMO_CODES={
+  'VORTEX2025':{coins:5,desc:'5 FREE COINS!'},
+  'ISLAND10':{coins:3,desc:'3 BONUS COINS!'},
+  'BATTLEPASS':{coins:10,desc:'10 COINS LOADED!'},
+  'EBOX':{coins:0,shields:3,freeIsland:true,desc:'FREE ISLAND + 3 SHIELDS ACTIVATED!'},
+};
+if (!global._vortexPromo) global._vortexPromo={};
+const promoUsed=global._vortexPromo;
+
+module.exports=async function handler(req,res){
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers','Content-Type');
   if (req.method==='OPTIONS') return res.status(200).end();
-  if (Math.random() < 0.01) cleanupStaleGames();
 
-  const action = req.query.action;
+  const action=req.query.action;
 
-  if (req.method === 'GET') {
-    if (action === 'lobby') {
-      const l = store.lobbies[req.query.code];
+  if (req.method==='GET') {
+    if (action==='lobby') {
+      const l=store.lobbies[req.query.code];
       return l ? ok(res,{lobby:publicLobby(l)}) : fail(res,'LOBBY NOT FOUND',404);
     }
-    if (action === 'public_lobbies') {
-      const now = Date.now();
-      const list = Object.values(store.lobbies)
+    if (action==='public_lobbies') {
+      const now=Date.now();
+      const list=Object.values(store.lobbies)
         .filter(l=>l.privacy==='public'&&l.status==='waiting')
-        .filter(l=>now-(l.lastActivity||l.createdAt||0)<600000)
+        .filter(l=>now-(l.lastActivity||l.createdAt||0)<10*60*1000)
         .map(l=>({code:l.code,host:l.host,players:l.players.length,maxPlayers:l.maxPlayers,bots:(l.bots||[]).length}))
         .slice(0,10);
       return ok(res,{lobbies:list});
     }
-    if (action === 'game') {
-      const g = store.games[req.query.gameId];
+    if (action==='game') {
+      const g=store.games[req.query.gameId];
       if (!g) return fail(res,'GAME NOT FOUND',404);
-      const stalledMs = Date.now() - (g.lastAction||0);
-      if (stalledMs > 3000) runBotMoves(g);
+      runBotMoves(g);
       return ok(res,{state:publicState(g)});
     }
-    if (action === 'online_players') {
+    if (action==='online_players') {
       const players = getOnlinePlayers();
-      const invites = req.query.username ? (store.online[req.query.username]?.pendingInvites||[]) : [];
+      const invites = req.query.username ? (store.online[req.query.username]?.pendingInvites || []) : [];
+      // Clear invites after reading
       if (req.query.username && store.online[req.query.username]) store.online[req.query.username].pendingInvites = [];
       return ok(res,{players, count:players.length, invites});
     }
     return fail(res,'Unknown action',400);
   }
 
-  if (req.method === 'POST') {
-    let body = {};
+  if (req.method==='POST') {
+    let body={};
     try {
-      if (typeof req.body==='object'&&req.body!==null) { body=req.body; }
+      if (typeof req.body==='object'&&req.body!==null){ body=req.body; }
       else {
-        const raw = await new Promise((resolve,reject)=>{
+        const raw=await new Promise((resolve,reject)=>{
           let d=''; req.on('data',c=>{d+=c;}); req.on('end',()=>resolve(d)); req.on('error',reject);
         });
-        body = JSON.parse(raw||'{}');
+        body=JSON.parse(raw||'{}');
       }
-    } catch { body={}; }
+    } catch{ body={}; }
 
-    if (action === 'register') {
+    if (action==='register') {
       const n=(body.username||'').trim().slice(0,14);
       if (!n) return fail(res,'INVALID USERNAME');
       return ok(res,{username:n});
     }
-    if (action === 'create_lobby') {
+    if (action==='create_lobby') {
       const{username,maxPlayers,privacy}=body;
       if (!username) return fail(res,'NO USERNAME');
       const max=Math.min(6,Math.max(2,parseInt(maxPlayers)||2));
@@ -409,7 +370,7 @@ module.exports = async function handler(req, res) {
       };
       return ok(res,{lobby:publicLobby(store.lobbies[code])});
     }
-    if (action === 'add_bot') {
+    if (action==='add_bot') {
       const{username,code}=body;
       const l=store.lobbies[code];
       if (!l) return fail(res,'LOBBY NOT FOUND');
@@ -422,7 +383,7 @@ module.exports = async function handler(req, res) {
       l.players.push(botName); l.bots.push(botName); l.lastActivity=Date.now();
       return ok(res,{lobby:publicLobby(l)});
     }
-    if (action === 'remove_bot') {
+    if (action==='remove_bot') {
       const{username,code,botName}=body;
       const l=store.lobbies[code];
       if (!l) return fail(res,'LOBBY NOT FOUND');
@@ -433,7 +394,7 @@ module.exports = async function handler(req, res) {
       l.lastActivity=Date.now();
       return ok(res,{lobby:publicLobby(l)});
     }
-    if (action === 'join_lobby') {
+    if (action==='join_lobby') {
       const{username,code}=body;
       if (!username) return fail(res,'NO USERNAME');
       const l=store.lobbies[code];
@@ -446,16 +407,16 @@ module.exports = async function handler(req, res) {
       l.lastActivity=Date.now();
       return ok(res,{lobby:publicLobby(l)});
     }
-    if (action === 'leave_lobby') {
+    if (action==='leave_lobby') {
       const{username,code}=body;
       const l=store.lobbies[code];
       if (!l) return ok(res,{ok:true});
       l.players=l.players.filter(p=>p!==username);
       if (l.players.length===0){ delete store.lobbies[code]; }
-      else { if(l.host===username) l.host=l.players[0]; l.lastActivity=Date.now(); }
+      else{ if (l.host===username) l.host=l.players[0]; l.lastActivity=Date.now(); }
       return ok(res,{ok:true});
     }
-    if (action === 'start_game') {
+    if (action==='start_game') {
       const{username,code}=body;
       const l=store.lobbies[code];
       if (!l) return fail(res,'LOBBY NOT FOUND');
@@ -467,7 +428,7 @@ module.exports = async function handler(req, res) {
       runBotMoves(g);
       return ok(res,{gameId:g.gameId,state:publicState(g)});
     }
-    if (action === 'rps_choice') {
+    if (action==='rps_choice') {
       const{gameId,username,choice}=body;
       const g=store.games[gameId];
       if (!g) return fail(res,'GAME NOT FOUND');
@@ -476,69 +437,108 @@ module.exports = async function handler(req, res) {
       if (g.pendingRPS[username]) return ok(res,{state:publicState(g)});
       if (!['rock','paper','scissors'].includes(choice)) return fail(res,'INVALID CHOICE');
       g.pendingRPS[username]=choice; g.lastAction=Date.now();
-      // Fill bots
       g.bots.forEach(bot=>{
         if (g.alivePlayers.includes(bot)&&!g.pendingRPS[bot]) g.pendingRPS[bot]=botPickRPS();
       });
       if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
-        const resolved = resolveRPSPhase(g);
-        if (!resolved) {
-          runBotMoves(g); // retry if tie
+        const choices = {...g.pendingRPS};
+        g.rpsChoices = choices; // store for display
+        const winners=resolveMultiRPS(g.pendingRPS);
+        const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
+        if (winners.length===g.alivePlayers.length) {
+          // Full tie — clear and retry
+          g.moves.unshift(`🤝 TIE — ${choiceStr}`);
+          g.pendingRPS={}; g.rpsChoices={};
+          runBotMoves(g);
         } else {
+          // Multiple OR single winners — each gets an action
+          winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
+          g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
+          g.phase='action'; g.pendingRPS={};
+          winners.forEach(w=>awardCoin(g,w));
+          const winnerStr=winners.join(', ');
+          g.moves.unshift(`🏆 ${winnerStr} WIN RPS (${choiceStr}) — each picks an action!`);
           // Auto-play bot winners
-          g.rpsWinners.filter(w=>g.bots.includes(w)).forEach(w=>{
-            while ((g.pendingActions[w]||0)>0&&!g.gameOver) {
-              const {act,target}=botPickOneAction(g,w);
-              applyOneAction(g,w,act,target?(target.name||target):null,act==='cannon'||act==='slicer');
-              g.pendingActions[w]--;
-            }
+          winners.filter(w=>g.bots.includes(w)).forEach(w=>{
+            const{act,target,fromInv}=botPickAction(g,w);
+            const result=applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
             delete g.pendingActions[w];
+            if (Object.keys(g.pendingActions).length===0){
+              g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
+            }
           });
-          if (Object.keys(g.pendingActions).length===0&&!g.gameOver){
-            g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
-          }
         }
       }
       return ok(res,{state:publicState(g)});
     }
-    if (action === 'action_choice') {
+    if (action==='action_choice') {
       const{gameId,username,action:act,targetPlayer,useInventory}=body;
       const g=store.games[gameId];
       if (!g) return fail(res,'GAME NOT FOUND');
       if (g.gameOver||g.phase!=='action') return fail(res,'NOT YOUR TURN');
+      // Support multi-winner: check if this player is a pending action winner
       const winners=g.rpsWinners||[g.rpsWinner];
-      if (!winners.includes(username)||(g.pendingActions[username]||0)<=0) return fail(res,'NOT YOUR TURN');
+      if (!winners.includes(username)||!g.pendingActions[username]) return fail(res,'NOT YOUR TURN');
       g.lastAction=Date.now();
-      const result=applyOneAction(g,username,act,targetPlayer,useInventory||false);
+      const result=applyAction(g,username,act,targetPlayer,useInventory||false);
       if (result.error) return fail(res,result.error);
-      // Consume one slot
-      g.pendingActions[username]--;
-      if (g.pendingActions[username] <= 0) delete g.pendingActions[username];
-      // If all winners done, back to RPS
+      delete g.pendingActions[username];
+      // If all winners have acted, go back to RPS
       if (Object.keys(g.pendingActions).length===0){
         if (!result.gameOver){
           g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
         }
+      } else {
+        // Still have pending actions from other winners
+        g.rpsWinner=Object.keys(g.pendingActions)[0];
       }
       runBotMoves(g);
       if (result.gameOver) return ok(res,{gameOver:true,winner:result.winner,state:publicState(g)});
-      return ok(res,{state:publicState(g),slotsLeft:g.pendingActions[username]||0});
+      return ok(res,{state:publicState(g)});
     }
-    if (action === 'heartbeat') {
+    if (action==='heartbeat') {
       const{username}=body;
       if (!username) return fail(res,'NO USERNAME');
       if (!store.online[username]) store.online[username]={ts:Date.now(),pendingInvites:[]};
       else store.online[username].ts=Date.now();
       return ok(res,{ok:true,online:getOnlinePlayers().length});
     }
-    if (action === 'send_invite') {
+    if (action==='send_invite') {
       const{from,to,lobbyCode}=body;
       if (!from||!to||!lobbyCode) return fail(res,'MISSING FIELDS');
       if (!store.online[to]) return fail(res,'PLAYER NOT ONLINE');
       if (!store.online[to].pendingInvites) store.online[to].pendingInvites=[];
+      // Avoid duplicate invites
       store.online[to].pendingInvites=store.online[to].pendingInvites.filter(i=>i.lobbyCode!==lobbyCode);
       store.online[to].pendingInvites.push({from,lobbyCode,ts:Date.now()});
       return ok(res,{ok:true});
+    }
+    if (action==='redeem_promo') {
+      const{gameId,username,code:promoCode}=body;
+      const g=store.games[gameId];
+      if (!g) return fail(res,'GAME NOT FOUND');
+      if (!g.players.includes(username)) return fail(res,'NOT IN GAME');
+      const promo=PROMO_CODES[(promoCode||'').toUpperCase()];
+      if (!promo) return fail(res,'INVALID PROMO CODE');
+      const key=`${gameId}:${username}:${promoCode.toUpperCase()}`;
+      if (promoUsed[key]) return fail(res,'PROMO ALREADY USED IN THIS GAME');
+      promoUsed[key]=true;
+      if (promo.coins) g.islands[username].coins=(g.islands[username].coins||0)+promo.coins;
+      if (promo.shields) {
+        const prev=g.islands[username].shields||0;
+        g.islands[username].shields=Math.min(3,prev+promo.shields);
+      }
+      if (promo.freeIsland) {
+        // Restore all quadrants (heal island back to full)
+        g.islands[username].quadrants=[];
+        g.grids[username]=g.baseGrids[username].map(r=>[...r]);
+        if (!g.alivePlayers.includes(username)) {
+          g.alivePlayers.push(username);
+          g.islands[username].alive=true;
+        }
+      }
+      g.moves.unshift(`🎁 ${username} redeemed promo "${promoCode.toUpperCase()}": ${promo.desc}`);
+      return ok(res,{coins:g.islands[username].coins,desc:promo.desc,state:publicState(g)});
     }
     return fail(res,'Unknown action');
   }
