@@ -1,20 +1,22 @@
-// ─── Vortex Islands — API v3 + Coin Economy + Public Lobbies ──────────────────
+// ─── Vortex Islands — API v4 (No Coins, Task-Based Weapons) ──────────────────
 const { v4: uuidv4 } = require('uuid');
 if (!global._vortexStore) global._vortexStore = { lobbies:{}, games:{}, online:{} };
 const store = global._vortexStore;
-// Expire online players after 20s of no heartbeat
+
+// ── Online presence (20s TTL) ─────────────────────────────────────────────────
 function getOnlinePlayers() {
   const now = Date.now();
   Object.keys(store.online).forEach(u => { if (now - store.online[u].ts > 20000) delete store.online[u]; });
   return Object.keys(store.online);
 }
 
+// ── Seeded RNG ────────────────────────────────────────────────────────────────
 function seededRandom(seed) {
   let s = seed >>> 0;
   return () => { s = (Math.imul(1664525,s)+1013904223)>>>0; return s/0xffffffff; };
 }
 
-// Higher resolution grid: 32×16 (was 20×10)
+// ── Island grid 32×16 ─────────────────────────────────────────────────────────
 function generateIslandGrid(seed) {
   const rng = seededRandom(seed);
   const W=32, H=16, cx=W/2, cy=H/2;
@@ -50,6 +52,7 @@ function publicLobby(l) {
   };
 }
 
+// ── Create game ───────────────────────────────────────────────────────────────
 function createGame(players, lobbyCode, bots) {
   const gameId=uuidv4(), baseGrids={}, grids={}, scores={}, islands={};
   players.forEach(p=>{
@@ -57,13 +60,15 @@ function createGame(players, lobbyCode, bots) {
     baseGrids[p]=generateIslandGrid(seed);
     grids[p]=baseGrids[p].map(r=>[...r]);
     scores[p]=0;
-    islands[p]={ shields:0, quadrants:[], alive:true, inventory:{cannons:0,slicers:0}, coins:0 };
+    // inventory: cannons & slicers can be stored; shields cannot be stored (they are applied instantly)
+    islands[p]={ shields:0, quadrants:[], alive:true, inventory:{cannons:0,slicers:0} };
   });
   return store.games[gameId]={
     gameId, players:[...players], alivePlayers:[...players],
     baseGrids, grids, scores, islands, moves:[],
     phase:'rps', pendingRPS:{}, rpsWinner:null, rpsWinners:[],
-    pendingActions:{}, // track who still needs to take action among winners
+    // pendingTasks: { username: tasksRemaining (int) }
+    pendingTasks:{},
     gameOver:false, winner:null, lobbyCode, bots:bots||[], lastAction:Date.now()
   };
 }
@@ -74,13 +79,14 @@ function publicState(g) {
     grids:g.grids, scores:g.scores, islands:g.islands, moves:g.moves,
     phase:g.phase,
     pendingRPS:Object.fromEntries(Object.entries(g.pendingRPS).map(([k])=>[k,true])),
-    rpsChoices:g.rpsChoices||{}, // visible choices after resolution
+    rpsChoices:g.rpsChoices||{},
     rpsWinner:g.rpsWinner, rpsWinners:g.rpsWinners||[],
-    pendingActions:g.pendingActions||{},
+    pendingTasks:g.pendingTasks||{},
     gameOver:g.gameOver, winner:g.winner, bots:g.bots||[]
   };
 }
 
+// ── RPS resolution ────────────────────────────────────────────────────────────
 function rpsBeats(a,b){
   return ({rock:['scissors'],scissors:['paper'],paper:['rock']}[a]||[]).includes(b);
 }
@@ -88,140 +94,132 @@ function resolveMultiRPS(choices){
   const players=Object.keys(choices);
   if(players.length===1)return players;
   const moves=[...new Set(Object.values(choices))];
-  if(moves.length===1)return players;
+  if(moves.length===1)return players; // full tie
   for(const m of moves){
     const others=moves.filter(x=>x!==m);
     if(others.every(x=>rpsBeats(m,x)))return players.filter(p=>choices[p]===m);
   }
-  return players;
+  return players; // partial tie — everyone ties
+}
+
+// ── How many tasks does a winner get?
+// Tasks = number of players they beat (losers count), minimum 1
+function calcTasks(winner, choices) {
+  const myMove = choices[winner];
+  const losers = Object.entries(choices).filter(([p,m])=> p!==winner && rpsBeats(myMove,m));
+  return Math.max(1, losers.length);
 }
 
 const RPS_MOVES = ['rock','paper','scissors'];
 function botPickRPS() { return RPS_MOVES[Math.floor(Math.random()*RPS_MOVES.length)]; }
 
-function botPickAction(g, botName) {
+function botPickTask(g, botName) {
   const me = g.islands[botName];
   const enemies = g.alivePlayers.filter(p=>p!==botName);
   const target = enemies[Math.floor(Math.random()*enemies.length)];
-  const coins = me.coins||0;
 
-  if (coins >= 1) {
-    const enemyHasShield = target && g.islands[target] && g.islands[target].shields>0;
-    if (enemyHasShield && Math.random()<0.7) return { act:'buy_cannon', target };
-    if (!enemyHasShield && Math.random()<0.6) return { act:'buy_slicer', target };
-    if (me.shields===0 && Math.random()<0.5) return { act:'buy_shield', target:null };
-  }
-  if (me.inventory.cannons>0 && target && Math.random()<0.6)
+  // Use stored weapons first
+  if (me.inventory.cannons>0 && target) {
     return { act:'cannon', target, fromInv:true };
-  if (me.inventory.slicers>0 && target && Math.random()<0.5) {
-    const t=g.islands[target];
-    if (!t||t.shields===0) return { act:'slicer', target, fromInv:true };
   }
-  return { act:'store', target:null, fromInv:false };
+  if (me.inventory.slicers>0 && target) {
+    const t = g.islands[target];
+    if (!t || t.shields===0) return { act:'slicer', target, fromInv:true };
+  }
+  // Buy weapons
+  if (Math.random()<0.5) return { act:'buy_cannon', target:null };
+  return { act:'buy_slicer', target:null };
 }
 
 const QNAMES = ['TOP-LEFT','TOP-RIGHT','BOT-LEFT','BOT-RIGHT'];
-const SHOP_PRICE = 1;
 
-function applyAction(g, username, act, targetPlayer, useInventory) {
-  const alive=g.alivePlayers;
-  const target=(targetPlayer&&alive.includes(targetPlayer)&&targetPlayer!==username)
+// ── Apply a single task action ────────────────────────────────────────────────
+// Returns { error } or {}
+function applyTask(g, username, act, targetPlayer, useInventory) {
+  const alive = g.alivePlayers;
+  const target = (targetPlayer && alive.includes(targetPlayer) && targetPlayer!==username)
     ? targetPlayer : alive.find(p=>p!==username);
-  const me=g.islands[username];
+  const me = g.islands[username];
 
-  // ── SHOP: buy with coins ──────────────────────────────────────────────────
-  if (act==='buy_cannon'||act==='buy_slicer'||act==='buy_shield') {
-    if ((me.coins||0)<SHOP_PRICE) return {error:'NOT ENOUGH COINS — WIN RPS TO EARN COINS!'};
-    me.coins-=SHOP_PRICE;
-    if (act==='buy_shield') {
-      if (me.shields>=3) { me.coins+=SHOP_PRICE; return {error:'MAX 3 SHIELDS'}; }
-      me.shields++;
-      g.moves.unshift(`🪙 ${username} bought 🛡 SHIELD (${me.shields}/3) — slicers can no longer cut you!`);
-    } else if (act==='buy_cannon') {
-      me.inventory.cannons++;
-      g.moves.unshift(`🪙 ${username} bought 💣 CANNON — stored in inventory!`);
-    } else {
-      me.inventory.slicers++;
-      g.moves.unshift(`🪙 ${username} bought ⚔ SLICER — stored in inventory!`);
-    }
+  // BUY CANNON — store into inventory, use next win
+  if (act==='buy_cannon') {
+    me.inventory.cannons++;
+    g.moves.unshift(`🔧 ${username} built a 💣 CANNON — stored for next win!`);
     return {};
   }
 
-  // ── CANNON: removes shield OR destroys quadrant ───────────────────────────
+  // BUY SLICER — store into inventory, use next win
+  if (act==='buy_slicer') {
+    me.inventory.slicers++;
+    g.moves.unshift(`🔧 ${username} forged an ⚔ SLICER — stored for next win!`);
+    return {};
+  }
+
+  // USE CANNON (from inventory) — removes ONE shield ring; if no shield, destroys a quadrant
   if (act==='cannon') {
-    if (!target) return {error:'NO TARGET'};
+    if (!target) return { error:'NO TARGET' };
     if (useInventory) {
-      if (me.inventory.cannons<=0) return {error:'NO CANNONS IN INVENTORY'};
+      if (me.inventory.cannons<=0) return { error:'NO CANNONS IN INVENTORY' };
       me.inventory.cannons--;
+    } else {
+      return { error:'CANNON MUST BE USED FROM INVENTORY' };
     }
-    const t=g.islands[target];
+    const t = g.islands[target];
     if (t.shields>0) {
       t.shields--;
-      g.moves.unshift(`💣 ${username}'s CANNON blasted through ${target}'s shield! (${t.shields} rings left)`);
+      g.moves.unshift(`💣 ${username}'s CANNON smashed ${target}'s shield! (${t.shields} remaining)`);
     } else {
+      // No shield — cannon destroys a quadrant
       const surv=[0,1,2,3].filter(q=>!t.quadrants.includes(q));
       if (surv.length>0) {
         const q=surv[Math.floor(Math.random()*surv.length)];
         t.quadrants.push(q);
-        g.moves.unshift(`💥 ${username}'s CANNON destroyed ${target}'s ${QNAMES[q]}!`);
+        g.moves.unshift(`💥 ${username}'s CANNON blasted ${target}'s ${QNAMES[q]}!`);
         g.grids[target]=applyQuadrantDamage(g.baseGrids[target],t.quadrants);
       }
     }
-    if (!useInventory) {
-      me.inventory.cannons++;
-      g.moves.unshift(`📦 ${username} banked a 💣 Cannon`);
-    }
+  }
 
-  // ── SLICER: BLOCKED by shield; cuts+deletes quadrant if no shield ─────────
-  } else if (act==='slicer') {
-    if (!target) return {error:'NO TARGET'};
+  // USE SLICER (from inventory) — blocked by any shield; otherwise slices+deletes quadrant
+  else if (act==='slicer') {
+    if (!target) return { error:'NO TARGET' };
     if (useInventory) {
-      if (me.inventory.slicers<=0) return {error:'NO SLICERS IN INVENTORY'};
+      if (me.inventory.slicers<=0) return { error:'NO SLICERS IN INVENTORY' };
       me.inventory.slicers--;
-    }
-    const t=g.islands[target];
-    if (t.shields>0) {
-      // Shield blocks slicer completely — refund it
-      if (useInventory) me.inventory.slicers++;
-      g.moves.unshift(`🛡 ${target}'s shield BLOCKED ${username}'s slicer! Use 💣 CANNON to remove the shield first!`);
     } else {
-      // No shield: slicer slices island into 4 then deletes one part
+      return { error:'SLICER MUST BE USED FROM INVENTORY' };
+    }
+    const t = g.islands[target];
+    if (t.shields>0) {
+      // Shield blocks — refund the slicer
+      me.inventory.slicers++;
+      g.moves.unshift(`🛡 ${target}'s shield BLOCKED ${username}'s slicer! Use 💣 CANNON to remove shields first.`);
+    } else {
       const surv=[0,1,2,3].filter(q=>!t.quadrants.includes(q));
       if (surv.length>0) {
         const q=surv[Math.floor(Math.random()*surv.length)];
         t.quadrants.push(q);
-        g.moves.unshift(`⚔ ${username}'s SLICER split ${target}'s island into ${4} parts and deleted ${QNAMES[q]}!`);
+        g.moves.unshift(`⚔ ${username}'s SLICER cut ${target}'s island — ${QNAMES[q]} destroyed!`);
         g.grids[target]=applyQuadrantDamage(g.baseGrids[target],t.quadrants);
         if (surv.length-1>0)
           g.moves.unshift(`🗺 ${target} has ${surv.length-1} island part(s) remaining.`);
       }
-      if (!useInventory) {
-        me.inventory.slicers++;
-        g.moves.unshift(`📦 ${username} banked a ⚔ Slicer`);
-      }
     }
+  }
 
-  // ── SHIELD: free action, up to 3 rings ───────────────────────────────────
-  } else if (act==='shield') {
-    if (me.shields>=3) return {error:'MAX 3 SHIELDS'};
+  // USE SHIELD — applies instantly, cannot be stored
+  else if (act==='shield') {
+    if (me.shields>=3) return { error:'MAX 3 SHIELDS' };
     me.shields++;
-    g.moves.unshift(`🛡 ${username} raised shield ring ${me.shields}/3 — SLICER is now BLOCKED!`);
-    const bonus=Math.random()<.5?'cannons':'slicers';
-    me.inventory[bonus]++;
-    g.moves.unshift(`📦 ${username} got a ${bonus==='cannons'?'💣 Cannon':'⚔ Slicer'} bonus!`);
+    g.moves.unshift(`🛡 ${username} raised shield ring ${me.shields}/3 — slicers are now BLOCKED!`);
+  }
 
-  // ── STORE: bank both weapons ──────────────────────────────────────────────
-  } else if (act==='store') {
-    me.inventory.cannons++;
-    me.inventory.slicers++;
-    g.moves.unshift(`📦 ${username} banked 💣 Cannon + ⚔ Slicer!`);
-
-  } else {
-    return {error:'UNKNOWN ACTION'};
+  else {
+    return { error:'UNKNOWN ACTION' };
   }
 
   // Elimination check
-  if (target&&g.islands[target]&&g.islands[target].quadrants.length>=4) {
+  if (target && g.islands[target] && g.islands[target].quadrants.length>=4) {
     g.islands[target].alive=false;
     g.alivePlayers=g.alivePlayers.filter(p=>p!==target);
     g.moves.unshift(`💀 ${target}'s island sank — ELIMINATED!`);
@@ -232,16 +230,34 @@ function applyAction(g, username, act, targetPlayer, useInventory) {
     const gw=g.alivePlayers[0];
     g.gameOver=true; g.phase='done'; g.winner=gw; g.scores[gw]+=50;
     if (g.lobbyCode&&store.lobbies[g.lobbyCode]) store.lobbies[g.lobbyCode].status='waiting';
-    return {gameOver:true,winner:gw};
+    return { gameOver:true, winner:gw };
   }
 
-  g.phase='rps'; g.rpsWinner=null; g.pendingRPS={};
   return {};
 }
 
-function awardCoin(g, winner) {
-  g.islands[winner].coins=(g.islands[winner].coins||0)+1;
-  g.moves.unshift(`🪙 ${winner} won RPS and earned 1 COIN! (Total: ${g.islands[winner].coins})`);
+// ── After all tasks consumed, reset to RPS ────────────────────────────────────
+function finishTaskPhaseIfDone(g) {
+  if (g.gameOver) return;
+  const anyPending = Object.values(g.pendingTasks).some(n=>n>0);
+  if (!anyPending) {
+    g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingTasks={};
+  }
+}
+
+// ── Bot auto-plays all its pending tasks ──────────────────────────────────────
+function runBotTasks(g) {
+  if (!g||g.gameOver) return;
+  const bots = g.bots||[];
+  Object.entries(g.pendingTasks).forEach(([bot, tasks])=>{
+    if (!bots.includes(bot)||tasks<=0) return;
+    while (g.pendingTasks[bot]>0 && !g.gameOver) {
+      const {act,target,fromInv}=botPickTask(g,bot);
+      applyTask(g,bot,act,target||(target&&target.name)||null,fromInv||false);
+      g.pendingTasks[bot]--;
+    }
+  });
+  finishTaskPhaseIfDone(g);
 }
 
 function runBotMoves(g) {
@@ -253,55 +269,43 @@ function runBotMoves(g) {
       }
     });
     if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
-      const choices={...g.pendingRPS};
-      g.rpsChoices=choices;
-      const winners=resolveMultiRPS(g.pendingRPS);
-      const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
-      if (winners.length===g.alivePlayers.length) {
-        g.moves.unshift(`🤝 TIE — ${choiceStr}`);
-        g.pendingRPS={}; g.rpsChoices={};
-        runBotMoves(g);
-      } else {
-        winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
-        g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
-        g.phase='action'; g.pendingRPS={};
-        winners.forEach(w=>awardCoin(g,w));
-        g.moves.unshift(`🏆 ${winners.join(', ')} WIN RPS (${choiceStr}) — each picks an action!`);
-        winners.filter(w=>g.bots.includes(w)).forEach(w=>{
-          const{act,target,fromInv}=botPickAction(g,w);
-          applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
-          delete g.pendingActions[w];
-        });
-        if (Object.keys(g.pendingActions).length===0){
-          g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
-        }
-      }
+      resolveRPS(g);
     }
-  } else if (g.phase==='action'&&g.pendingActions) {
-    const botActors=Object.keys(g.pendingActions).filter(w=>g.bots.includes(w));
-    botActors.forEach(w=>{
-      const{act,target,fromInv}=botPickAction(g,w);
-      applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
-      delete g.pendingActions[w];
-    });
-    if (Object.keys(g.pendingActions).length===0&&!g.gameOver){
-      g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
-    }
+  } else if (g.phase==='action') {
+    runBotTasks(g);
   }
+}
+
+function resolveRPS(g) {
+  const choices={...g.pendingRPS};
+  g.rpsChoices=choices;
+  const winners=resolveMultiRPS(g.pendingRPS);
+  const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
+
+  if (winners.length===g.alivePlayers.length) {
+    // Full tie
+    g.moves.unshift(`🤝 TIE — ${choiceStr} — replay!`);
+    g.pendingRPS={}; g.rpsChoices={};
+    runBotMoves(g);
+    return;
+  }
+
+  // Assign tasks to each winner based on how many they beat
+  winners.forEach(w=>{
+    g.scores[w]+=10;
+    const tasks=calcTasks(w, choices);
+    g.pendingTasks[w]=tasks;
+    g.moves.unshift(`🏆 ${w} wins RPS (${choices[w]}) — earned ${tasks} task${tasks>1?'s':''}!`);
+  });
+  g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
+  g.phase='action'; g.pendingRPS={};
+
+  // Auto-play bots
+  runBotTasks(g);
 }
 
 const ok=(res,d)=>{res.setHeader('Content-Type','application/json');res.status(200).json(d);};
 const fail=(res,m,c=400)=>{res.setHeader('Content-Type','application/json');res.status(c).json({error:m});};
-
-// Promo codes
-const PROMO_CODES={
-  'VORTEX2025':{coins:5,desc:'5 FREE COINS!'},
-  'ISLAND10':{coins:3,desc:'3 BONUS COINS!'},
-  'BATTLEPASS':{coins:10,desc:'10 COINS LOADED!'},
-  'EBOX':{coins:0,shields:3,freeIsland:true,desc:'FREE ISLAND + 3 SHIELDS ACTIVATED!'},
-};
-if (!global._vortexPromo) global._vortexPromo={};
-const promoUsed=global._vortexPromo;
 
 module.exports=async function handler(req,res){
   res.setHeader('Access-Control-Allow-Origin','*');
@@ -311,6 +315,7 @@ module.exports=async function handler(req,res){
 
   const action=req.query.action;
 
+  // ── GET ──────────────────────────────────────────────────────────────────────
   if (req.method==='GET') {
     if (action==='lobby') {
       const l=store.lobbies[req.query.code];
@@ -332,15 +337,15 @@ module.exports=async function handler(req,res){
       return ok(res,{state:publicState(g)});
     }
     if (action==='online_players') {
-      const players = getOnlinePlayers();
-      const invites = req.query.username ? (store.online[req.query.username]?.pendingInvites || []) : [];
-      // Clear invites after reading
-      if (req.query.username && store.online[req.query.username]) store.online[req.query.username].pendingInvites = [];
-      return ok(res,{players, count:players.length, invites});
+      const players=getOnlinePlayers();
+      const invites=req.query.username ? (store.online[req.query.username]?.pendingInvites||[]) : [];
+      if (req.query.username&&store.online[req.query.username]) store.online[req.query.username].pendingInvites=[];
+      return ok(res,{players,count:players.length,invites});
     }
     return fail(res,'Unknown action',400);
   }
 
+  // ── POST ─────────────────────────────────────────────────────────────────────
   if (req.method==='POST') {
     let body={};
     try {
@@ -437,64 +442,32 @@ module.exports=async function handler(req,res){
       if (g.pendingRPS[username]) return ok(res,{state:publicState(g)});
       if (!['rock','paper','scissors'].includes(choice)) return fail(res,'INVALID CHOICE');
       g.pendingRPS[username]=choice; g.lastAction=Date.now();
+      // Auto-fill bots
       g.bots.forEach(bot=>{
         if (g.alivePlayers.includes(bot)&&!g.pendingRPS[bot]) g.pendingRPS[bot]=botPickRPS();
       });
       if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
-        const choices = {...g.pendingRPS};
-        g.rpsChoices = choices; // store for display
-        const winners=resolveMultiRPS(g.pendingRPS);
-        const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
-        if (winners.length===g.alivePlayers.length) {
-          // Full tie — clear and retry
-          g.moves.unshift(`🤝 TIE — ${choiceStr}`);
-          g.pendingRPS={}; g.rpsChoices={};
-          runBotMoves(g);
-        } else {
-          // Multiple OR single winners — each gets an action
-          winners.forEach(w=>{ g.scores[w]+=10; g.pendingActions[w]=true; });
-          g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
-          g.phase='action'; g.pendingRPS={};
-          winners.forEach(w=>awardCoin(g,w));
-          const winnerStr=winners.join(', ');
-          g.moves.unshift(`🏆 ${winnerStr} WIN RPS (${choiceStr}) — each picks an action!`);
-          // Auto-play bot winners
-          winners.filter(w=>g.bots.includes(w)).forEach(w=>{
-            const{act,target,fromInv}=botPickAction(g,w);
-            const result=applyAction(g,w,act,target?(target.name||target):null,fromInv||false);
-            delete g.pendingActions[w];
-            if (Object.keys(g.pendingActions).length===0){
-              g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
-            }
-          });
-        }
+        resolveRPS(g);
       }
       return ok(res,{state:publicState(g)});
     }
-    if (action==='action_choice') {
+    if (action==='task_action') {
+      // Single task action by a winner
       const{gameId,username,action:act,targetPlayer,useInventory}=body;
       const g=store.games[gameId];
       if (!g) return fail(res,'GAME NOT FOUND');
-      if (g.gameOver||g.phase!=='action') return fail(res,'NOT YOUR TURN');
-      // Support multi-winner: check if this player is a pending action winner
-      const winners=g.rpsWinners||[g.rpsWinner];
-      if (!winners.includes(username)||!g.pendingActions[username]) return fail(res,'NOT YOUR TURN');
+      if (g.gameOver||g.phase!=='action') return fail(res,'NOT ACTION PHASE');
+      const tasks=g.pendingTasks[username];
+      if (!tasks||tasks<=0) return fail(res,'NO TASKS REMAINING');
       g.lastAction=Date.now();
-      const result=applyAction(g,username,act,targetPlayer,useInventory||false);
+      const result=applyTask(g,username,act,targetPlayer,useInventory||false);
       if (result.error) return fail(res,result.error);
-      delete g.pendingActions[username];
-      // If all winners have acted, go back to RPS
-      if (Object.keys(g.pendingActions).length===0){
-        if (!result.gameOver){
-          g.phase='rps'; g.rpsWinner=null; g.rpsWinners=[]; g.rpsChoices={}; g.pendingActions={};
-        }
-      } else {
-        // Still have pending actions from other winners
-        g.rpsWinner=Object.keys(g.pendingActions)[0];
-      }
-      runBotMoves(g);
+      g.pendingTasks[username]--;
+      // Run any bot tasks that may have been unlocked
+      runBotTasks(g);
+      finishTaskPhaseIfDone(g);
       if (result.gameOver) return ok(res,{gameOver:true,winner:result.winner,state:publicState(g)});
-      return ok(res,{state:publicState(g)});
+      return ok(res,{state:publicState(g),tasksLeft:g.pendingTasks[username]||0});
     }
     if (action==='heartbeat') {
       const{username}=body;
@@ -508,37 +481,9 @@ module.exports=async function handler(req,res){
       if (!from||!to||!lobbyCode) return fail(res,'MISSING FIELDS');
       if (!store.online[to]) return fail(res,'PLAYER NOT ONLINE');
       if (!store.online[to].pendingInvites) store.online[to].pendingInvites=[];
-      // Avoid duplicate invites
       store.online[to].pendingInvites=store.online[to].pendingInvites.filter(i=>i.lobbyCode!==lobbyCode);
       store.online[to].pendingInvites.push({from,lobbyCode,ts:Date.now()});
       return ok(res,{ok:true});
-    }
-    if (action==='redeem_promo') {
-      const{gameId,username,code:promoCode}=body;
-      const g=store.games[gameId];
-      if (!g) return fail(res,'GAME NOT FOUND');
-      if (!g.players.includes(username)) return fail(res,'NOT IN GAME');
-      const promo=PROMO_CODES[(promoCode||'').toUpperCase()];
-      if (!promo) return fail(res,'INVALID PROMO CODE');
-      const key=`${gameId}:${username}:${promoCode.toUpperCase()}`;
-      if (promoUsed[key]) return fail(res,'PROMO ALREADY USED IN THIS GAME');
-      promoUsed[key]=true;
-      if (promo.coins) g.islands[username].coins=(g.islands[username].coins||0)+promo.coins;
-      if (promo.shields) {
-        const prev=g.islands[username].shields||0;
-        g.islands[username].shields=Math.min(3,prev+promo.shields);
-      }
-      if (promo.freeIsland) {
-        // Restore all quadrants (heal island back to full)
-        g.islands[username].quadrants=[];
-        g.grids[username]=g.baseGrids[username].map(r=>[...r]);
-        if (!g.alivePlayers.includes(username)) {
-          g.alivePlayers.push(username);
-          g.islands[username].alive=true;
-        }
-      }
-      g.moves.unshift(`🎁 ${username} redeemed promo "${promoCode.toUpperCase()}": ${promo.desc}`);
-      return ok(res,{coins:g.islands[username].coins,desc:promo.desc,state:publicState(g)});
     }
     return fail(res,'Unknown action');
   }
