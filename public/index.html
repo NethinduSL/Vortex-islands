@@ -441,8 +441,8 @@ function showScreen(id) {
     document.getElementById('online-panel').style.display = 'block';
     loadPublicLobbies();
     loadOnlinePlayers();
-    publicLobbiesInterval = setInterval(loadPublicLobbies, 5000);
-    onlineInterval = setInterval(loadOnlinePlayers, 3000);
+    publicLobbiesInterval = setInterval(loadPublicLobbies, 3000);
+    onlineInterval = setInterval(loadOnlinePlayers, 1500);
   } else {
     document.getElementById('public-lobbies-section').style.display = 'none';
     document.getElementById('online-panel').style.display = 'none';
