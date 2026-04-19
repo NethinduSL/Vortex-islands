@@ -295,7 +295,7 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
   </div>
 </div>
 
-<!-- SCREEN 2: Host or Join -->
+<!-- SCREEN 2: Host or Join — shows public lobby list below buttons -->
 <div class="screen" id="screen-menu">
   <div class="card">
     <div class="card-title">👾 WHAT DO YOU WANT TO DO?</div>
@@ -306,11 +306,13 @@ button:disabled{background:#333!important;color:#555!important;cursor:not-allowe
     </div>
   </div>
 
+  <!-- ONLINE PLAYERS PANEL -->
   <div id="online-panel" style="display:none;">
     <div class="online-title"><span class="online-dot"></span> ONLINE PLAYERS <span id="online-count" style="color:#555;">(0)</span></div>
     <div id="online-list"><div class="online-empty">No other players online</div></div>
   </div>
 
+  <!-- PUBLIC LOBBY BROWSER — only shown in menu screen -->
   <div id="public-lobbies-section">
     <div class="lobby-list-title">
       🌐 OPEN LOBBIES
@@ -405,16 +407,10 @@ function closeSplash() {
   setTimeout(() => sp.remove(), 750);
 }
 
-// ── Safe JSON — guards against Vercel HTML error pages ──────────────────────
-async function safeJson(resp) {
-  const text = await resp.text();
-  try { return JSON.parse(text); } catch(e) { return { error: 'SERVER_ERROR' }; }
-}
-
-// ── Fetch with 10s timeout ───────────────────────────────────────────────────
+// Fetch with 8s timeout to prevent hanging on slow/cold server
 async function fetchTimeout(url, opts) {
   const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 10000);
+  const tid = setTimeout(() => ctrl.abort(), 8000);
   try {
     const r = await fetch(url, { ...opts, signal: ctrl.signal });
     clearTimeout(tid);
@@ -427,9 +423,9 @@ async function api(action, body) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    return safeJson(r);
+    return r.json();
   } else {
-    return safeJson(await fetchTimeout(`${API}?action=${action}`));
+    return (await fetchTimeout(`${API}?action=${action}`)).json();
   }
 }
 
@@ -441,8 +437,8 @@ function showScreen(id) {
     document.getElementById('online-panel').style.display = 'block';
     loadPublicLobbies();
     loadOnlinePlayers();
-    publicLobbiesInterval = setInterval(loadPublicLobbies, 3000);
-    onlineInterval = setInterval(loadOnlinePlayers, 1500);
+    publicLobbiesInterval = setInterval(loadPublicLobbies, 5000);
+    onlineInterval = setInterval(loadOnlinePlayers, 3000);
   } else {
     document.getElementById('public-lobbies-section').style.display = 'none';
     document.getElementById('online-panel').style.display = 'none';
@@ -461,10 +457,10 @@ function setStatus(msg, isErr) {
   bar.textContent = msg; bar.className = isErr ? 'err' : '';
 }
 
-// ── PUBLIC LOBBY LIST ──────────────────────────────────────────────────────
+// ── PUBLIC LOBBY LIST ─────────────────────────────────────────────────────────
 async function loadPublicLobbies() {
   try {
-    const data = await safeJson(await fetch(`${API}?action=public_lobbies`));
+    const data = await (await fetch(`${API}?action=public_lobbies`)).json();
     const container = document.getElementById('lobby-list-container');
     if (!data.lobbies || data.lobbies.length === 0) {
       container.innerHTML = '<div class="lobby-list-empty">No open lobbies right now. Host one!</div>';
@@ -496,18 +492,20 @@ async function quickJoin(code) {
 
 document.getElementById('refresh-lobbies-btn').onclick = loadPublicLobbies;
 
-// ── LOBBY RENDER ────────────────────────────────────────────────────────────
+// ── LOBBY RENDER ──────────────────────────────────────────────────────────────
 function renderLobbyPlayers(lobby) {
   currentLobby = lobby;
   document.getElementById('lobby-code-display').textContent = lobby.code;
   document.getElementById('lobby-player-count').textContent =
     `PLAYERS: ${lobby.players.length} / ${lobby.maxPlayers}`;
 
+  // Show privacy badge in title
   const privBadge = lobby.privacy === 'private'
     ? '<span class="privacy-badge-private">🔒 PRIVATE</span>'
     : '<span class="privacy-badge-public">🌐 PUBLIC</span>';
   document.getElementById('lobby-card-title').innerHTML = `🏝 LOBBY ${privBadge}`;
 
+  // Update hint based on privacy
   if (lobby.privacy === 'private') {
     document.getElementById('lobby-share-hint').textContent = '🔒 PRIVATE — SHARE CODE WITH FRIENDS:';
     document.getElementById('lobby-join-hint').textContent = 'Only players with the code can join';
@@ -549,22 +547,12 @@ function renderLobbyPlayers(lobby) {
   }
 }
 
-// ── LOBBY POLLING — resilient, retries on error ──────────────────────────────
 function startLobbyPolling(code) {
   stopLobbyPolling();
-  let lobbyFailCount = 0;
-  let lobbyPollRunning = false;
   lobbyPollInterval = setInterval(async () => {
-    if (lobbyPollRunning) return;
-    lobbyPollRunning = true;
     try {
-      const data = await safeJson(await fetchTimeout(`${API}?action=lobby&code=${code}`));
-      if (data.error) {
-        lobbyFailCount++;
-        if (lobbyFailCount >= 60) stopLobbyPolling();
-        lobbyPollRunning = false; return;
-      }
-      lobbyFailCount = 0;
+      const data = await (await fetch(`${API}?action=lobby&code=${code}`)).json();
+      if (data.error) { stopLobbyPolling(); return; }
       const lobby = data.lobby;
       if (lobby.status === 'in_game') {
         stopLobbyPolling();
@@ -572,19 +560,14 @@ function startLobbyPolling(code) {
         return;
       }
       renderLobbyPlayers(lobby);
-    } catch(e) {
-      lobbyFailCount++;
-      if (lobbyFailCount >= 60) stopLobbyPolling();
-    } finally {
-      lobbyPollRunning = false;
-    }
+    } catch(e) {}
   }, 1500);
 }
 function stopLobbyPolling() {
   if (lobbyPollInterval) { clearInterval(lobbyPollInterval); lobbyPollInterval = null; }
 }
 
-// ── REGISTER ─────────────────────────────────────────────────────────────────
+// ── REGISTER ──────────────────────────────────────────────────────────────────
 document.getElementById('register-btn').onclick = async () => {
   const name = document.getElementById('username-input').value.trim();
   if (!name) return showError('error-msg', 'ENTER YOUR NAME!');
@@ -663,27 +646,29 @@ async function removeBot(botName) {
   if (!data.error) renderLobbyPlayers(data.lobby);
 }
 
-// ── HEARTBEAT — 5s keeps online presence alive through cold starts ───────────
+// ── HEARTBEAT — keep player in online list ────────────────────────────────────
 function startHeartbeat() {
   if (heartbeatInterval) clearInterval(heartbeatInterval);
   async function beat() {
     if (!myUsername) return;
     try {
       const data = await api('heartbeat', { username: myUsername });
+      // Check for pending invites
       if (data && data.invites && data.invites.length > 0) {
-        showInviteToast(data.invites[data.invites.length - 1]);
+        const inv = data.invites[data.invites.length - 1];
+        showInviteToast(inv);
       }
     } catch(e) {}
   }
   beat();
-  heartbeatInterval = setInterval(beat, 5000);
+  heartbeatInterval = setInterval(beat, 8000);
 }
 
 // ── ONLINE PLAYERS LIST ───────────────────────────────────────────────────────
 async function loadOnlinePlayers() {
   if (!myUsername) return;
   try {
-    const data = await safeJson(await fetchTimeout(`${API}?action=online_players&username=${encodeURIComponent(myUsername)}`));
+    const data = await (await fetchTimeout(`${API}?action=online_players&username=${encodeURIComponent(myUsername)}`)).json();
     const players = data.players || [];
     const countEl = document.getElementById('online-count');
     const listEl = document.getElementById('online-list');
@@ -702,6 +687,8 @@ async function loadOnlinePlayers() {
           : !isMe ? `<span style="font-size:clamp(4px,1vw,5px);color:#333;">IN LOBBY: ${currentLobby ? currentLobby.code : 'NONE'}</span>` : ''}
       </div>`;
     }).join('');
+
+    // Also check pending invites in this response
     if (data.invites && data.invites.length > 0) {
       showInviteToast(data.invites[data.invites.length - 1]);
     }
