@@ -1,13 +1,88 @@
-// ─── Vortex Islands — API v4 (No Coins, Task-Based Weapons) ──────────────────
+// ─── Vortex Islands — API v5 (Persistent Redis Store) ────────────────────────
 const { v4: uuidv4 } = require('uuid');
-if (!global._vortexStore) global._vortexStore = { lobbies:{}, games:{}, online:{} };
-const store = global._vortexStore;
 
-// ── Online presence (20s TTL) ─────────────────────────────────────────────────
-function getOnlinePlayers() {
-  const now = Date.now();
-  Object.keys(store.online).forEach(u => { if (now - store.online[u].ts > 20000) delete store.online[u]; });
-  return Object.keys(store.online);
+// ── KV / Redis persistence ─────────────────────────────────────────────────────
+// Uses @vercel/kv when KV_REST_API_URL + KV_REST_API_TOKEN env vars are set.
+// Falls back to in-memory (single-instance, works for local dev & hobby deploys).
+let kv = null;
+try {
+  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    const { kv: _kv } = require('@vercel/kv');
+    kv = _kv;
+  }
+} catch(e) { kv = null; }
+
+if (!global._vortexStore) global._vortexStore = { lobbies:{}, games:{}, online:{} };
+const mem = global._vortexStore;
+
+const TTL_LOBBY  = 3600;
+const TTL_GAME   = 10800;
+const TTL_ONLINE = 60;
+
+async function kvGet(key)    { if (!kv) return null; try { return await kv.get(key); } catch(e) { return null; } }
+async function kvSet(key, v, ttl) { if (!kv) return; try { await kv.set(key, v, { ex: ttl }); } catch(e) {} }
+async function kvDel(key)    { if (!kv) return; try { await kv.del(key); } catch(e) {} }
+async function kvKeys(pat)   { if (!kv) return []; try { return await kv.keys(pat); } catch(e) { return []; } }
+
+const store = {
+  async getLobby(code) {
+    if (kv) return await kvGet(`lobby:${code}`);
+    return mem.lobbies[code] || null;
+  },
+  async setLobby(code, lobby) {
+    if (kv) { await kvSet(`lobby:${code}`, lobby, TTL_LOBBY); return; }
+    mem.lobbies[code] = lobby;
+  },
+  async delLobby(code) {
+    if (kv) { await kvDel(`lobby:${code}`); return; }
+    delete mem.lobbies[code];
+  },
+  async allLobbies() {
+    if (kv) {
+      const keys = await kvKeys('lobby:*');
+      if (!keys.length) return [];
+      const vals = await Promise.all(keys.map(k => kvGet(k)));
+      return vals.filter(Boolean);
+    }
+    return Object.values(mem.lobbies);
+  },
+  async getGame(id) {
+    if (kv) return await kvGet(`game:${id}`);
+    return mem.games[id] || null;
+  },
+  async setGame(id, game) {
+    if (kv) { await kvSet(`game:${id}`, game, TTL_GAME); return; }
+    mem.games[id] = game;
+  },
+  async getOnline(username) {
+    if (kv) return await kvGet(`online:${username}`);
+    return mem.online[username] || null;
+  },
+  async setOnline(username, data) {
+    if (kv) { await kvSet(`online:${username}`, data, TTL_ONLINE); return; }
+    mem.online[username] = data;
+  },
+  async delOnline(username) {
+    if (kv) { await kvDel(`online:${username}`); return; }
+    delete mem.online[username];
+  },
+  async allOnlineKeys() {
+    if (kv) {
+      const keys = await kvKeys('online:*');
+      return keys.map(k => k.replace('online:', ''));
+    }
+    // In-memory fallback: prune stale first
+    const now = Date.now();
+    Object.keys(mem.online).forEach(u => {
+      if (now - mem.online[u].ts > 20000) delete mem.online[u];
+    });
+    return Object.keys(mem.online);
+  },
+};
+
+// ── Online presence ────────────────────────────────────────────────────────────
+async function getOnlinePlayers() {
+  return await store.allOnlineKeys();
 }
 
 // ── Seeded RNG ────────────────────────────────────────────────────────────────
@@ -16,7 +91,7 @@ function seededRandom(seed) {
   return () => { s = (Math.imul(1664525,s)+1013904223)>>>0; return s/0xffffffff; };
 }
 
-// ── Island grid 32×16 ─────────────────────────────────────────────────────────
+// ── Island grid 32x16 ─────────────────────────────────────────────────────────
 function generateIslandGrid(seed) {
   const rng = seededRandom(seed);
   const W=32, H=16, cx=W/2, cy=H/2;
@@ -60,14 +135,12 @@ function createGame(players, lobbyCode, bots) {
     baseGrids[p]=generateIslandGrid(seed);
     grids[p]=baseGrids[p].map(r=>[...r]);
     scores[p]=0;
-    // inventory: cannons & slicers can be stored; shields cannot be stored (they are applied instantly)
     islands[p]={ shields:0, quadrants:[], alive:true, inventory:{cannons:0,slicers:0} };
   });
-  return store.games[gameId]={
+  return {
     gameId, players:[...players], alivePlayers:[...players],
     baseGrids, grids, scores, islands, moves:[],
     phase:'rps', pendingRPS:{}, rpsWinner:null, rpsWinners:[],
-    // pendingTasks: { username: tasksRemaining (int) }
     pendingTasks:{},
     gameOver:false, winner:null, lobbyCode, bots:bots||[], lastAction:Date.now()
   };
@@ -94,16 +167,14 @@ function resolveMultiRPS(choices){
   const players=Object.keys(choices);
   if(players.length===1)return players;
   const moves=[...new Set(Object.values(choices))];
-  if(moves.length===1)return players; // full tie
+  if(moves.length===1)return players;
   for(const m of moves){
     const others=moves.filter(x=>x!==m);
     if(others.every(x=>rpsBeats(m,x)))return players.filter(p=>choices[p]===m);
   }
-  return players; // partial tie — everyone ties
+  return players;
 }
 
-// ── How many tasks does a winner get?
-// Tasks = number of players they beat (losers count), minimum 1
 function calcTasks(winner, choices) {
   const myMove = choices[winner];
   const losers = Object.entries(choices).filter(([p,m])=> p!==winner && rpsBeats(myMove,m));
@@ -117,16 +188,11 @@ function botPickTask(g, botName) {
   const me = g.islands[botName];
   const enemies = g.alivePlayers.filter(p=>p!==botName);
   const target = enemies[Math.floor(Math.random()*enemies.length)];
-
-  // Use stored weapons first
-  if (me.inventory.cannons>0 && target) {
-    return { act:'cannon', target, fromInv:true };
-  }
+  if (me.inventory.cannons>0 && target) return { act:'cannon', target, fromInv:true };
   if (me.inventory.slicers>0 && target) {
     const t = g.islands[target];
     if (!t || t.shields===0) return { act:'slicer', target, fromInv:true };
   }
-  // Buy weapons
   if (Math.random()<0.5) return { act:'buy_cannon', target:null };
   return { act:'buy_slicer', target:null };
 }
@@ -134,28 +200,22 @@ function botPickTask(g, botName) {
 const QNAMES = ['TOP-LEFT','TOP-RIGHT','BOT-LEFT','BOT-RIGHT'];
 
 // ── Apply a single task action ────────────────────────────────────────────────
-// Returns { error } or {}
 function applyTask(g, username, act, targetPlayer, useInventory) {
   const alive = g.alivePlayers;
   const target = (targetPlayer && alive.includes(targetPlayer) && targetPlayer!==username)
     ? targetPlayer : alive.find(p=>p!==username);
   const me = g.islands[username];
 
-  // BUY CANNON — store into inventory, use next win
   if (act==='buy_cannon') {
     me.inventory.cannons++;
     g.moves.unshift(`🔧 ${username} built a 💣 CANNON — stored for next win!`);
     return {};
   }
-
-  // BUY SLICER — store into inventory, use next win
   if (act==='buy_slicer') {
     me.inventory.slicers++;
     g.moves.unshift(`🔧 ${username} forged an ⚔ SLICER — stored for next win!`);
     return {};
   }
-
-  // USE CANNON (from inventory) — removes ONE shield ring; if no shield, destroys a quadrant
   if (act==='cannon') {
     if (!target) return { error:'NO TARGET' };
     if (useInventory) {
@@ -169,7 +229,6 @@ function applyTask(g, username, act, targetPlayer, useInventory) {
       t.shields--;
       g.moves.unshift(`💣 ${username}'s CANNON smashed ${target}'s shield! (${t.shields} remaining)`);
     } else {
-      // No shield — cannon destroys a quadrant
       const surv=[0,1,2,3].filter(q=>!t.quadrants.includes(q));
       if (surv.length>0) {
         const q=surv[Math.floor(Math.random()*surv.length)];
@@ -178,10 +237,7 @@ function applyTask(g, username, act, targetPlayer, useInventory) {
         g.grids[target]=applyQuadrantDamage(g.baseGrids[target],t.quadrants);
       }
     }
-  }
-
-  // USE SLICER (from inventory) — blocked by any shield; otherwise slices+deletes quadrant
-  else if (act==='slicer') {
+  } else if (act==='slicer') {
     if (!target) return { error:'NO TARGET' };
     if (useInventory) {
       if (me.inventory.slicers<=0) return { error:'NO SLICERS IN INVENTORY' };
@@ -191,7 +247,6 @@ function applyTask(g, username, act, targetPlayer, useInventory) {
     }
     const t = g.islands[target];
     if (t.shields>0) {
-      // Shield blocks — refund the slicer
       me.inventory.slicers++;
       g.moves.unshift(`🛡 ${target}'s shield BLOCKED ${username}'s slicer! Use 💣 CANNON to remove shields first.`);
     } else {
@@ -205,16 +260,11 @@ function applyTask(g, username, act, targetPlayer, useInventory) {
           g.moves.unshift(`🗺 ${target} has ${surv.length-1} island part(s) remaining.`);
       }
     }
-  }
-
-  // USE SHIELD — applies instantly, cannot be stored
-  else if (act==='shield') {
+  } else if (act==='shield') {
     if (me.shields>=3) return { error:'MAX 3 SHIELDS' };
     me.shields++;
     g.moves.unshift(`🛡 ${username} raised shield ring ${me.shields}/3 — slicers are now BLOCKED!`);
-  }
-
-  else {
+  } else {
     return { error:'UNKNOWN ACTION' };
   }
 
@@ -229,14 +279,12 @@ function applyTask(g, username, act, targetPlayer, useInventory) {
   if (g.alivePlayers.length===1) {
     const gw=g.alivePlayers[0];
     g.gameOver=true; g.phase='done'; g.winner=gw; g.scores[gw]+=50;
-    if (g.lobbyCode&&store.lobbies[g.lobbyCode]) store.lobbies[g.lobbyCode].status='waiting';
     return { gameOver:true, winner:gw };
   }
 
   return {};
 }
 
-// ── After all tasks consumed, reset to RPS ────────────────────────────────────
 function finishTaskPhaseIfDone(g) {
   if (g.gameOver) return;
   const anyPending = Object.values(g.pendingTasks).some(n=>n>0);
@@ -245,7 +293,6 @@ function finishTaskPhaseIfDone(g) {
   }
 }
 
-// ── Bot auto-plays all its pending tasks ──────────────────────────────────────
 function runBotTasks(g) {
   if (!g||g.gameOver) return;
   const bots = g.bots||[];
@@ -253,7 +300,7 @@ function runBotTasks(g) {
     if (!bots.includes(bot)||tasks<=0) return;
     while (g.pendingTasks[bot]>0 && !g.gameOver) {
       const {act,target,fromInv}=botPickTask(g,bot);
-      applyTask(g,bot,act,target||(target&&target.name)||null,fromInv||false);
+      applyTask(g,bot,act,target||null,fromInv||false);
       g.pendingTasks[bot]--;
     }
   });
@@ -268,9 +315,7 @@ function runBotMoves(g) {
         g.pendingRPS[bot]=botPickRPS(); g.lastAction=Date.now();
       }
     });
-    if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
-      resolveRPS(g);
-    }
+    if (g.alivePlayers.every(p=>g.pendingRPS[p])) resolveRPS(g);
   } else if (g.phase==='action') {
     runBotTasks(g);
   }
@@ -283,14 +328,12 @@ function resolveRPS(g) {
   const choiceStr=g.alivePlayers.map(p=>`${p}:${g.pendingRPS[p]}`).join(' | ');
 
   if (winners.length===g.alivePlayers.length) {
-    // Full tie
     g.moves.unshift(`🤝 TIE — ${choiceStr} — replay!`);
     g.pendingRPS={}; g.rpsChoices={};
     runBotMoves(g);
     return;
   }
 
-  // Assign tasks to each winner based on how many they beat
   winners.forEach(w=>{
     g.scores[w]+=10;
     const tasks=calcTasks(w, choices);
@@ -299,8 +342,6 @@ function resolveRPS(g) {
   });
   g.rpsWinners=[...winners]; g.rpsWinner=winners[0];
   g.phase='action'; g.pendingRPS={};
-
-  // Auto-play bots
   runBotTasks(g);
 }
 
@@ -318,12 +359,13 @@ module.exports=async function handler(req,res){
   // ── GET ──────────────────────────────────────────────────────────────────────
   if (req.method==='GET') {
     if (action==='lobby') {
-      const l=store.lobbies[req.query.code];
+      const l=await store.getLobby(req.query.code);
       return l ? ok(res,{lobby:publicLobby(l)}) : fail(res,'LOBBY NOT FOUND',404);
     }
     if (action==='public_lobbies') {
       const now=Date.now();
-      const list=Object.values(store.lobbies)
+      const all=await store.allLobbies();
+      const list=all
         .filter(l=>l.privacy==='public'&&l.status==='waiting')
         .filter(l=>now-(l.lastActivity||l.createdAt||0)<10*60*1000)
         .map(l=>({code:l.code,host:l.host,players:l.players.length,maxPlayers:l.maxPlayers,bots:(l.bots||[]).length}))
@@ -331,15 +373,22 @@ module.exports=async function handler(req,res){
       return ok(res,{lobbies:list});
     }
     if (action==='game') {
-      const g=store.games[req.query.gameId];
+      const g=await store.getGame(req.query.gameId);
       if (!g) return fail(res,'GAME NOT FOUND',404);
       runBotMoves(g);
+      // Persist updated bot state
+      await store.setGame(g.gameId, g);
       return ok(res,{state:publicState(g)});
     }
     if (action==='online_players') {
-      const players=getOnlinePlayers();
-      const invites=req.query.username ? (store.online[req.query.username]?.pendingInvites||[]) : [];
-      if (req.query.username&&store.online[req.query.username]) store.online[req.query.username].pendingInvites=[];
+      const players=await getOnlinePlayers();
+      const uname=req.query.username;
+      let invites=[];
+      if (uname) {
+        const od=await store.getOnline(uname);
+        invites=od?.pendingInvites||[];
+        if (od) { od.pendingInvites=[]; await store.setOnline(uname,od); }
+      }
       return ok(res,{players,count:players.length,invites});
     }
     return fail(res,'Unknown action',400);
@@ -367,17 +416,23 @@ module.exports=async function handler(req,res){
       const{username,maxPlayers,privacy}=body;
       if (!username) return fail(res,'NO USERNAME');
       const max=Math.min(6,Math.max(2,parseInt(maxPlayers)||2));
-      let code; do{ code=makeLobbyCode(); }while(store.lobbies[code]);
-      store.lobbies[code]={
+      // Generate unique code
+      let code, attempts=0;
+      do {
+        code=makeLobbyCode();
+        attempts++;
+      } while(attempts<20 && await store.getLobby(code));
+      const lobby={
         code,host:username,players:[username],maxPlayers:max,
         status:'waiting',bots:[],lastActivity:Date.now(),createdAt:Date.now(),
         privacy:privacy==='private'?'private':'public'
       };
-      return ok(res,{lobby:publicLobby(store.lobbies[code])});
+      await store.setLobby(code, lobby);
+      return ok(res,{lobby:publicLobby(lobby)});
     }
     if (action==='add_bot') {
       const{username,code}=body;
-      const l=store.lobbies[code];
+      const l=await store.getLobby(code);
       if (!l) return fail(res,'LOBBY NOT FOUND');
       if (l.host!==username) return fail(res,'ONLY HOST CAN ADD BOTS');
       if (l.status!=='waiting') return fail(res,'GAME ALREADY STARTED');
@@ -386,23 +441,26 @@ module.exports=async function handler(req,res){
       const existing=new Set(l.players);
       const botName=BOT_NAMES.find(n=>!existing.has(n))||`BOT-${Math.floor(Math.random()*9000+1000)}`;
       l.players.push(botName); l.bots.push(botName); l.lastActivity=Date.now();
+      await store.setLobby(code, l);
       return ok(res,{lobby:publicLobby(l)});
     }
     if (action==='remove_bot') {
       const{username,code,botName}=body;
-      const l=store.lobbies[code];
+      const l=await store.getLobby(code);
       if (!l) return fail(res,'LOBBY NOT FOUND');
       if (l.host!==username) return fail(res,'ONLY HOST CAN REMOVE BOTS');
       if (!l.bots.includes(botName)) return fail(res,'NOT A BOT');
       l.players=l.players.filter(p=>p!==botName);
       l.bots=l.bots.filter(b=>b!==botName);
       l.lastActivity=Date.now();
+      await store.setLobby(code, l);
       return ok(res,{lobby:publicLobby(l)});
     }
     if (action==='join_lobby') {
       const{username,code}=body;
-      if (!username) return fail(res,'NO USERNAME');
-      const l=store.lobbies[code];
+      // FIX: guard against null/empty username
+      if (!username||!username.trim()) return fail(res,'NO USERNAME');
+      const l=await store.getLobby(code);
       if (!l) return fail(res,'LOBBY NOT FOUND');
       if (l.status!=='waiting') return fail(res,'GAME ALREADY STARTED');
       if (!l.players.includes(username)) {
@@ -410,20 +468,21 @@ module.exports=async function handler(req,res){
         l.players.push(username);
       }
       l.lastActivity=Date.now();
+      await store.setLobby(code, l);
       return ok(res,{lobby:publicLobby(l)});
     }
     if (action==='leave_lobby') {
       const{username,code}=body;
-      const l=store.lobbies[code];
+      const l=await store.getLobby(code);
       if (!l) return ok(res,{ok:true});
       l.players=l.players.filter(p=>p!==username);
-      if (l.players.length===0){ delete store.lobbies[code]; }
-      else{ if (l.host===username) l.host=l.players[0]; l.lastActivity=Date.now(); }
+      if (l.players.length===0){ await store.delLobby(code); }
+      else{ if (l.host===username) l.host=l.players[0]; l.lastActivity=Date.now(); await store.setLobby(code,l); }
       return ok(res,{ok:true});
     }
     if (action==='start_game') {
       const{username,code}=body;
-      const l=store.lobbies[code];
+      const l=await store.getLobby(code);
       if (!l) return fail(res,'LOBBY NOT FOUND');
       if (l.host!==username) return fail(res,'ONLY HOST CAN START');
       if (l.players.length<2) return fail(res,'NEED AT LEAST 2 PLAYERS');
@@ -431,30 +490,31 @@ module.exports=async function handler(req,res){
       const g=createGame(l.players,code,l.bots||[]);
       l.gameId=g.gameId;
       runBotMoves(g);
+      // Persist both lobby and game atomically
+      await store.setLobby(code, l);
+      await store.setGame(g.gameId, g);
       return ok(res,{gameId:g.gameId,state:publicState(g)});
     }
     if (action==='rps_choice') {
       const{gameId,username,choice}=body;
-      const g=store.games[gameId];
+      const g=await store.getGame(gameId);
       if (!g) return fail(res,'GAME NOT FOUND');
       if (g.gameOver||g.phase!=='rps') return fail(res,'NOT RPS PHASE');
       if (!g.alivePlayers.includes(username)) return fail(res,'NOT IN GAME');
-      if (g.pendingRPS[username]) return ok(res,{state:publicState(g)});
+      if (g.pendingRPS[username]) { await store.setGame(gameId,g); return ok(res,{state:publicState(g)}); }
       if (!['rock','paper','scissors'].includes(choice)) return fail(res,'INVALID CHOICE');
       g.pendingRPS[username]=choice; g.lastAction=Date.now();
       // Auto-fill bots
       g.bots.forEach(bot=>{
         if (g.alivePlayers.includes(bot)&&!g.pendingRPS[bot]) g.pendingRPS[bot]=botPickRPS();
       });
-      if (g.alivePlayers.every(p=>g.pendingRPS[p])) {
-        resolveRPS(g);
-      }
+      if (g.alivePlayers.every(p=>g.pendingRPS[p])) resolveRPS(g);
+      await store.setGame(gameId, g);
       return ok(res,{state:publicState(g)});
     }
     if (action==='task_action') {
-      // Single task action by a winner
       const{gameId,username,action:act,targetPlayer,useInventory}=body;
-      const g=store.games[gameId];
+      const g=await store.getGame(gameId);
       if (!g) return fail(res,'GAME NOT FOUND');
       if (g.gameOver||g.phase!=='action') return fail(res,'NOT ACTION PHASE');
       const tasks=g.pendingTasks[username];
@@ -463,26 +523,36 @@ module.exports=async function handler(req,res){
       const result=applyTask(g,username,act,targetPlayer,useInventory||false);
       if (result.error) return fail(res,result.error);
       g.pendingTasks[username]--;
-      // Run any bot tasks that may have been unlocked
       runBotTasks(g);
       finishTaskPhaseIfDone(g);
+      // If game over, reset lobby status
+      if (result.gameOver && g.lobbyCode) {
+        const lobby = await store.getLobby(g.lobbyCode);
+        if (lobby) { lobby.status='waiting'; await store.setLobby(g.lobbyCode, lobby); }
+      }
+      await store.setGame(gameId, g);
       if (result.gameOver) return ok(res,{gameOver:true,winner:result.winner,state:publicState(g)});
       return ok(res,{state:publicState(g),tasksLeft:g.pendingTasks[username]||0});
     }
     if (action==='heartbeat') {
       const{username}=body;
       if (!username) return fail(res,'NO USERNAME');
-      if (!store.online[username]) store.online[username]={ts:Date.now(),pendingInvites:[]};
-      else store.online[username].ts=Date.now();
-      return ok(res,{ok:true,online:getOnlinePlayers().length});
+      const existing = await store.getOnline(username);
+      const data = existing || { ts: Date.now(), pendingInvites: [] };
+      data.ts = Date.now();
+      await store.setOnline(username, data);
+      const count = (await getOnlinePlayers()).length;
+      return ok(res,{ok:true,online:count});
     }
     if (action==='send_invite') {
       const{from,to,lobbyCode}=body;
       if (!from||!to||!lobbyCode) return fail(res,'MISSING FIELDS');
-      if (!store.online[to]) return fail(res,'PLAYER NOT ONLINE');
-      if (!store.online[to].pendingInvites) store.online[to].pendingInvites=[];
-      store.online[to].pendingInvites=store.online[to].pendingInvites.filter(i=>i.lobbyCode!==lobbyCode);
-      store.online[to].pendingInvites.push({from,lobbyCode,ts:Date.now()});
+      const od = await store.getOnline(to);
+      if (!od) return fail(res,'PLAYER NOT ONLINE');
+      if (!od.pendingInvites) od.pendingInvites=[];
+      od.pendingInvites=od.pendingInvites.filter(i=>i.lobbyCode!==lobbyCode);
+      od.pendingInvites.push({from,lobbyCode,ts:Date.now()});
+      await store.setOnline(to, od);
       return ok(res,{ok:true});
     }
     return fail(res,'Unknown action');
