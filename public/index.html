@@ -561,11 +561,15 @@ function renderLobbyPlayers(lobby) {
 
 function startLobbyPolling(code) {
   stopLobbyPolling();
-  // Fast polling: 1.2s for lobby
   lobbyPollInterval=setInterval(async()=>{
     try {
-      const data=await (await fetch(`${API}?action=lobby&code=${code}`)).json();
-      if (data.error){stopLobbyPolling();return;}
+      const res=await fetch(`${API}?action=lobby&code=${code}`);
+      const data=await res.json();
+      if (data.error) {
+        // Only abort if the lobby is definitively gone — otherwise keep retrying
+        if (data.error==='LOBBY NOT FOUND') { stopLobbyPolling(); setStatus('Lobby ended',true); }
+        return;
+      }
       const lobby=data.lobby;
       if (lobby.status==='in_game') {
         stopLobbyPolling();
@@ -573,7 +577,7 @@ function startLobbyPolling(code) {
         return;
       }
       renderLobbyPlayers(lobby);
-    } catch(e){}
+    } catch(e){ /* network blip — keep retrying */ }
   },1200);
 }
 function stopLobbyPolling() {
@@ -612,8 +616,13 @@ document.getElementById('create-lobby-btn').onclick=async()=>{
 };
 
 // ── JOIN BY CODE ───────────────────────────────────────────────────────────
-document.getElementById('join-btn').onclick=()=>showScreen('screen-join');
+document.getElementById('join-btn').onclick=()=>{
+  // FIX: block navigation to join screen if username not set
+  if (!myUsername) return showError('error-msg2','Enter your name first!');
+  showScreen('screen-join');
+};
 document.getElementById('join-lobby-btn').onclick=async()=>{
+  if (!myUsername) return showError('error-msg4','Enter your name first!');
   const code=document.getElementById('lobby-code-input').value.trim().toUpperCase();
   if (code.length<4) return showError('error-msg4','Enter a valid code');
   setStatus('Joining...');
