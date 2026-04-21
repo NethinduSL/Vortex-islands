@@ -740,7 +740,7 @@ window.addEventListener('resize',()=>{
 });
 
 async function init(attempt){
-  attempt=attempt||1;const MAX=8;
+  attempt=attempt||1;const MAX=10;
   document.getElementById('conn-text').innerHTML=`<span class="spinner"></span>Connecting... (${attempt}/${MAX})`;
   try{
     const data=await getState();
@@ -751,6 +751,8 @@ async function init(attempt){
     }
     document.getElementById('conn-text').innerHTML='<i class="fa-solid fa-signal" style="margin-right:6px;"></i>Live';
     document.getElementById('conn-bar').className='ok';
+    // FIX: sync RPS submitted state from server so buttons are correct on rejoin
+    myRPSSubmitted = !!(data.state.pendingRPS && data.state.pendingRPS[MY_NAME]);
     updateUI(data.state);
     if(data.state.gameOver){showGameOver(data.state.winner,data.state);return;}
     pollInterval=setInterval(poll,1800);
