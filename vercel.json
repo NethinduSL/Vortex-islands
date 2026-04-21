@@ -2,11 +2,13 @@
   "version": 2,
   "functions": {
     "api/game.js": {
-      "maxDuration": 10
+      "maxDuration": 60
     }
   },
   "rewrites": [
     { "source": "/api/game", "destination": "/api/game.js" },
+    { "source": "/game", "destination": "/game.html" },
+    { "source": "/credits", "destination": "/credits.html" },
     { "source": "/", "destination": "/index.html" }
   ]
 }
