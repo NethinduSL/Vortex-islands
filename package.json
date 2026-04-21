@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "Vortex Islands — Vercel-compatible (no WebSockets)",
   "dependencies": {
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "@vercel/kv": "^1.0.0"
   }
 }
